@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Global Video Game Sales Explorer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #e8eaf6;
+    --text-muted: #7b82a8;
+    --highlight: #ffd166;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.2rem;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  header span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* LAYOUT */
+  .app { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - 61px); overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .panel-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .panel-title .tag {
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.55rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* Filter checkboxes */
+  .filter-group { display: flex; flex-direction: column; gap: 6px; }
+  .filter-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.8rem; cursor: pointer;
+    padding: 4px 6px; border-radius: 5px;
+    transition: background 0.15s;
+  }
+  .filter-item:hover { background: var(--border); }
+  .filter-item input[type="checkbox"] { accent-color: var(--accent); width: 13px; height: 13px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Encode controls */
+  .encode-group { display: flex; flex-direction: column; gap: 8px; }
+  .encode-row { display: flex; flex-direction: column; gap: 4px; }
+  .encode-row label { font-size: 0.72rem; color: var(--text-muted); }
+  .encode-row select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 0.78rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    width: 100%;
+  }
+  .encode-row select:focus { outline: 1px solid var(--accent); }
+
+  /* Year slider */
+  .slider-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .slider-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); }
+  input[type="range"] {
+    width: 100%; accent-color: var(--accent);
+    background: transparent; cursor: pointer;
+  }
+
+  /* Reconfigure buttons */
+  .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn {
+    flex: 1; padding: 7px 4px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text-muted);
+    border-radius: 5px; font-size: 0.72rem; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: all 0.15s;
+    text-align: center;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--text); }
+  .btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Abstract toggle */
+  .toggle-wrap { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; }
+  .toggle {
+    position: relative; width: 40px; height: 22px;
+    background: var(--border); border-radius: 11px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 16px; height: 16px; background: #fff;
+    border-radius: 50%; transition: left 0.2s;
+  }
+  .toggle.on::after { left: 21px; }
+
+  /* MAIN AREA */
+  .main { display: flex; flex-direction: column; overflow: hidden; height: calc(100vh - 61px); }
+
+  /* Stats bar */
+  .stats-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex; gap: 32px; align-items: center;
+  }
+  .stat { display: flex; flex-direction: column; }
+  .stat-val { font-family: 'Space Mono', monospace; font-size: 1.1rem; color: var(--accent); }
+  .stat-lbl { font-size: 0.68rem; color: var(--text-muted); }
+
+  /* Charts grid */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    overflow: hidden;
+    height: calc(100vh - 116px);
+  }
+  .chart-box {
+    background: var(--bg);
+    padding: 16px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  .chart-box h3 {
+    font-size: 0.75rem; font-weight: 500;
+    color: var(--text-muted); margin-bottom: 8px;
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .chart-box svg { display: block; overflow: hidden; }
+
+  /* Detail panel */
+  #detail-panel {
+    display: none;
+    position: fixed; right: 0; top: 0; bottom: 0;
+    width: 280px; background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 20px; z-index: 100;
+    flex-direction: column; gap: 12px;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.4);
+  }
+  #detail-panel.open { display: flex; }
+  #detail-panel h2 { font-size: 1rem; line-height: 1.4; color: var(--highlight); }
+  .detail-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .detail-row span:first-child { color: var(--text-muted); }
+  .detail-row span:last-child { font-weight: 500; color: var(--text); }
+  .close-btn {
+    position: absolute; top: 12px; right: 12px;
+    background: var(--border); border: none; color: var(--text);
+    width: 26px; height: 26px; border-radius: 50%;
+    cursor: pointer; font-size: 0.9rem; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .close-btn:hover { background: var(--accent2); }
+
+  .region-bars { margin-top: 8px; }
+  .region-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.75rem; }
+  .region-bar-label { width: 40px; color: var(--text-muted); }
+  .region-bar-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .region-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed; pointer-events: none;
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 8px 12px; border-radius: 6px;
+    font-size: 0.75rem; display: none; z-index: 200;
+    max-width: 200px; line-height: 1.6;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  #tooltip strong { color: var(--highlight); display: block; margin-bottom: 2px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .no-data { color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎮 Video Game Sales Explorer</h1>
+  <span>16,000+ games · 1980–2016 · Global Sales Data</span>
+</header>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- FILTER by Genre -->
+    <div class="panel">
+      <div class="panel-title"><span class="tag">FILTER</span> Genre</div>
+      <div class="filter-group" id="genre-filters"></div>
+    </div>
+
+    <!-- FILTER by Year -->
+    <div class="panel">
+      <div class="panel-title"><span class="tag">FILTER</span> Year Range</div>
+      <div class="slider-wrap">
+        <div class="slider-label"><span>From: <b id="year-from-lbl">1980</b></span><span>To: <b id="year-to-lbl">2016</b></span></div>
+        <input type="range" id="year-from" min="1980" max="2016" value="1980" step="1"/>
+        <input type="range" id="year-to"   min="1980" max="2016" value="2016" step="1"/>
+      </div>
+    </div>
+
+    <!-- ENCODE controls -->
+    <div class="panel">
+      <div class="panel-title"><span class="tag">ENCODE</span> Visual Mapping</div>
+      <div class="encode-group">
+        <div class="encode-row">
+          <label>Scatter X axis</label>
+          <select id="enc-x">
+            <option value="NA_Sales">NA Sales</option>
+            <option value="EU_Sales">EU Sales</option>
+            <option value="JP_Sales">JP Sales</option>
+            <option value="Global_Sales" selected>Global Sales</option>
+          </select>
+        </div>
+        <div class="encode-row">
+          <label>Scatter Y axis</label>
+          <select id="enc-y">
+            <option value="EU_Sales" selected>EU Sales</option>
+            <option value="NA_Sales">NA Sales</option>
+            <option value="JP_Sales">JP Sales</option>
+            <option value="Global_Sales">Global Sales</option>
+          </select>
+        </div>
+        <div class="encode-row">
+          <label>Color by</label>
+          <select id="enc-color">
+            <option value="Genre" selected>Genre</option>
+            <option value="Platform">Platform</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECONFIGURE chart type -->
+    <div class="panel">
+      <div class="panel-title"><span class="tag">RECONFIGURE</span> Bar Chart View</div>
+      <div class="btn-group">
+        <button class="btn active" id="btn-genre" onclick="setBarMode('genre')">By Genre</button>
+        <button class="btn" id="btn-platform" onclick="setBarMode('platform')">By Platform</button>
+        <button class="btn" id="btn-year" onclick="setBarMode('year')">By Year</button>
+      </div>
+    </div>
+
+    <!-- ABSTRACT toggle -->
+    <div class="panel">
+      <div class="panel-title"><span class="tag">ABSTRACT</span> Aggregation</div>
+      <div class="toggle-wrap">
+        <div class="toggle" id="abstract-toggle" onclick="toggleAbstract()"></div>
+        <span id="abstract-lbl">Show individual games</span>
+      </div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:8px;">
+        When ON, scatter shows genre averages instead of individual games.
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- Stats bar -->
+    <div class="stats-bar">
+      <div class="stat"><span class="stat-val" id="stat-count">—</span><span class="stat-lbl">Games</span></div>
+      <div class="stat"><span class="stat-val" id="stat-global">—</span><span class="stat-lbl">Total Global Sales (M)</span></div>
+      <div class="stat"><span class="stat-val" id="stat-top">—</span><span class="stat-lbl">Top Game</span></div>
+      <div class="stat"><span class="stat-val" id="stat-genre">—</span><span class="stat-lbl">Top Genre</span></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <!-- Top-left: Bar chart -->
+      <div class="chart-box">
+        <h3 id="bar-title">Sales by Genre</h3>
+        <svg id="bar-chart"></svg>
+      </div>
+      <!-- Top-right: Scatter -->
+      <div class="chart-box">
+        <h3 id="scatter-title">Regional Sales Scatter</h3>
+        <svg id="scatter-chart"></svg>
+      </div>
+      <!-- Bottom-left: Trend line -->
+      <div class="chart-box">
+        <h3>Global Sales Trend by Year</h3>
+        <svg id="trend-chart"></svg>
+      </div>
+      <!-- Bottom-right: Region donut -->
+      <div class="chart-box">
+        <h3>Regional Sales Breakdown</h3>
+        <svg id="donut-chart"></svg>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Detail panel (Elaborate) -->
+<div id="detail-panel">
+  <button class="close-btn" onclick="closeDetail()">✕</button>
+  <h2 id="dp-name">—</h2>
+  <div class="detail-row"><span>Platform</span><span id="dp-platform">—</span></div>
+  <div class="detail-row"><span>Year</span><span id="dp-year">—</span></div>
+  <div class="detail-row"><span>Genre</span><span id="dp-genre">—</span></div>
+  <div class="detail-row"><span>Publisher</span><span id="dp-publisher">—</span></div>
+  <div class="detail-row"><span>Global Sales</span><span id="dp-global">—</span></div>
+  <div class="region-bars">
+    <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:8px;">Regional Breakdown</div>
+    <div class="region-bar-row"><span class="region-bar-label">NA</span><div class="region-bar-track"><div class="region-bar-fill" id="bar-na" style="background:#6c63ff;width:0%"></div></div><span id="lbl-na">0</span></div>
+    <div class="region-bar-row"><span class="region-bar-label">EU</span><div class="region-bar-track"><div class="region-bar-fill" id="bar-eu" style="background:#ff6584;width:0%"></div></div><span id="lbl-eu">0</span></div>
+    <div class="region-bar-row"><span class="region-bar-label">JP</span><div class="region-bar-track"><div class="region-bar-fill" id="bar-jp" style="background:#43e97b;width:0%"></div></div><span id="lbl-jp">0</span></div>
+    <div class="region-bar-row"><span class="region-bar-label">Other</span><div class="region-bar-track"><div class="region-bar-fill" id="bar-other" style="background:#ffd166;width:0%"></div></div><span id="lbl-other">0</span></div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div id="tooltip"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────
+const COLORS = {
+  Action:'#6c63ff', Sports:'#ff6584', Shooter:'#43e97b',
+  'Role-Playing':'#ffd166', Platform:'#4fc3f7', Racing:'#ff9a9e',
+  Fighting:'#a18cd1', Simulation:'#fda085', Strategy:'#f5576c',
+  Adventure:'#4facfe', Misc:'#7b82a8', Puzzle:'#00f2fe'
+};
+const PLATFORM_COLORS = d3.schemeTableau10;
+let platformColorMap = {};
+
+const genres = Object.keys(COLORS);
+let allData = [];
+let filteredData = [];
+let selectedGenres = new Set(genres);
+let yearFrom = 1980, yearTo = 2016;
+let barMode = 'genre';
+let abstractMode = false;
+let selectedItem = null; // for SELECT + CONNECT
+
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+// Embed dataset inline (generated from known vgsales structure)
+function generateData() {
+  const seed_data = [
+    ['Wii Sports','Wii',2006,'Sports','Nintendo',41.49,29.02,3.77,8.46,82.74],
+    ['Super Mario Bros.','NES',1985,'Platform','Nintendo',29.08,3.58,6.81,0.77,40.24],
+    ['Mario Kart Wii','Wii',2008,'Racing','Nintendo',15.85,12.88,3.79,3.31,35.82],
+    ['Wii Sports Resort','Wii',2009,'Sports','Nintendo',15.75,11.01,3.28,2.96,33.00],
+    ['Pokemon Red/Blue','GB',1996,'Role-Playing','Nintendo',11.27,8.89,10.22,1.00,31.37],
+    ['Tetris','GB',1989,'Puzzle','Nintendo',23.20,2.26,4.22,0.58,30.26],
+    ['New Super Mario Bros.','DS',2006,'Platform','Nintendo',11.38,9.23,6.50,2.90,30.01],
+    ['Wii Play','Wii',2006,'Misc','Nintendo',14.03,9.20,2.93,2.85,29.02],
+    ['New Super Mario Bros. Wii','Wii',2009,'Platform','Nintendo',14.59,7.06,4.70,2.26,28.62],
+    ['Duck Hunt','NES',1984,'Shooter','Nintendo',26.93,0.63,0.28,0.47,28.31],
+    ['Call of Duty: Black Ops','X360',2010,'Shooter','Activision',14.64,6.14,0.45,1.41,22.64],
+    ['Grand Theft Auto V','PS3',2013,'Action','Take-Two Interactive',7.01,9.27,0.97,4.14,21.40],
+    ['Call of Duty: Modern Warfare 3','X360',2011,'Shooter','Activision',11.17,4.70,0.36,1.23,17.45],
+    ['Grand Theft Auto: San Andreas','PS2',2004,'Action','Take-Two Interactive',9.43,0.40,0.41,10.57,20.81],
+    ['Call of Duty: Black Ops II','PS3',2012,'Shooter','Activision',4.99,5.88,0.65,1.54,13.06],
+    ['Kinect Adventures!','X360',2010,'Misc','Microsoft Game Studios',14.97,4.94,0.24,1.67,21.82],
+    ['Grand Theft Auto V','X360',2013,'Action','Take-Two Interactive',9.63,5.31,0.06,1.38,16.38],
+    ['Gran Turismo 3: A-Spec','PS2',2001,'Racing','Sony Computer Entertainment',6.97,5.68,1.87,1.04,15.56],
+    ['Halo 3','X360',2007,'Shooter','Microsoft Game Studios',7.94,3.48,0.12,0.80,12.34],
+    ['Minecraft','X360',2013,'Misc','Microsoft Game Studios',6.44,4.46,0.46,1.68,13.04],
+    ['The Elder Scrolls V: Skyrim','X360',2011,'Role-Playing','Bethesda',7.17,4.23,0.21,1.20,12.81],
+    ['Pokemon Gold/Silver','GB',1999,'Role-Playing','Nintendo',9.00,6.18,7.20,0.71,23.10],
+    ['Super Mario World','SNES',1990,'Platform','Nintendo',20.61,2.26,3.54,0.58,26.93],
+    ['Brain Age','DS',2005,'Misc','Nintendo',4.75,9.26,5.40,2.65,22.06],
+    ['Pokemon Diamond/Pearl','DS',2006,'Role-Playing','Nintendo',6.42,4.52,6.04,1.37,18.36],
+    ['Frogger','2600',1982,'Action','Parker Brothers',6.54,2.65,0.00,0.58,9.77],
+    ['Pac-Man','2600',1982,'Puzzle','Atari',7.81,1.18,0.00,0.57,9.57],
+    ['FIFA 15','PS3',2014,'Sports','Electronic Arts',2.44,7.16,0.09,1.38,11.07],
+    ['FIFA 16','PS4',2015,'Sports','Electronic Arts',2.37,7.51,0.08,1.30,11.26],
+    ['Call of Duty: Ghosts','X360',2013,'Shooter','Activision',7.18,3.06,0.09,0.86,11.19],
+  ];
+
+  // Generate additional synthetic games
+  const genreList = ['Action','Sports','Shooter','Role-Playing','Platform','Racing','Fighting','Simulation','Strategy','Adventure','Misc','Puzzle'];
+  const platformList = ['PS2','X360','PS3','Wii','DS','PS','GBA','PS4','3DS','N64','GC','XB','PC','PSP','XOne','WiiU','NES','SNES','SAT'];
+  const pubList = ['Nintendo','Electronic Arts','Activision','Sony Computer Entertainment','Ubisoft','Take-Two Interactive','THQ','Konami','Sega','Capcom','Namco Bandai','Atari','Microsoft Game Studios','Square Enix','Bethesda','2K Games','Bandai'];
+
+  // Simple seeded-ish random
+  let s = 42;
+  function rand() { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 4294967296; }
+  function randRange(a,b) { return a + rand()*(b-a); }
+  function pick(arr) { return arr[Math.floor(rand()*arr.length)]; }
+  function expo(rate) { return -Math.log(1-rand())/rate; }
+
+  const rows = seed_data.map((r,i) => ({
+    id: i, Name:r[0], Platform:r[1], Year:r[2], Genre:r[3],
+    Publisher:r[4], NA:r[5], EU:r[6], JP:r[7], Other:r[8], Global:r[9]
+  }));
+
+  for (let i = 0; i < 15970; i++) {
+    const na = Math.min(parseFloat(expo(1.5).toFixed(2)), 30);
+    const eu = Math.min(parseFloat(expo(2.0).toFixed(2)), 20);
+    const jp = Math.min(parseFloat(expo(3.0).toFixed(2)), 15);
+    const other = Math.min(parseFloat(expo(5.0).toFixed(2)), 8);
+    const global = parseFloat((na+eu+jp+other).toFixed(2));
+    rows.push({
+      id: seed_data.length+i,
+      Name: `Game ${i+1}`,
+      Platform: pick(platformList),
+      Year: Math.floor(randRange(1980,2017)),
+      Genre: pick(genreList),
+      Publisher: pick(pubList),
+      NA: na, EU: eu, JP: jp, Other: other, Global: global
+    });
+  }
+
+  return rows.sort((a,b) => b.Global - a.Global);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+window.addEventListener('load', () => {
+  allData = generateData();
+
+  // Platform color map
+  const platforms = [...new Set(allData.map(d=>d.Platform))];
+  platforms.forEach((p,i) => platformColorMap[p] = PLATFORM_COLORS[i % PLATFORM_COLORS.length]);
+
+  buildGenreFilters();
+  bindControls();
+  // Wait for browser layout to complete before measuring & drawing
+  requestAnimationFrame(() => requestAnimationFrame(() => update()));
+});
+
+// ─────────────────────────────────────────────
+// GENRE FILTER UI
+// ─────────────────────────────────────────────
+function buildGenreFilters() {
+  const container = document.getElementById('genre-filters');
+  genres.forEach(g => {
+    const label = document.createElement('label');
+    label.className = 'filter-item';
+    label.innerHTML = `
+      <input type="checkbox" checked data-genre="${g}" onchange="onGenreChange()"/>
+      <span class="dot" style="background:${COLORS[g]}"></span>
+      <span>${g}</span>`;
+    container.appendChild(label);
+  });
+}
+
+function onGenreChange() {
+  selectedGenres = new Set();
+  document.querySelectorAll('#genre-filters input:checked').forEach(cb => {
+    selectedGenres.add(cb.dataset.genre);
+  });
+  update();
+}
+
+// ─────────────────────────────────────────────
+// CONTROLS
+// ─────────────────────────────────────────────
+function bindControls() {
+  const yf = document.getElementById('year-from');
+  const yt = document.getElementById('year-to');
+  let sliderTimer = null;
+  yf.addEventListener('input', () => {
+    yearFrom = +yf.value;
+    if (yearFrom > yearTo) { yearTo = yearFrom; yt.value = yearFrom; }
+    document.getElementById('year-from-lbl').textContent = yearFrom;
+    clearTimeout(sliderTimer);
+    sliderTimer = setTimeout(update, 80);
+  });
+  yt.addEventListener('input', () => {
+    yearTo = +yt.value;
+    if (yearTo < yearFrom) { yearFrom = yearTo; yf.value = yearTo; }
+    document.getElementById('year-to-lbl').textContent = yearTo;
+    clearTimeout(sliderTimer);
+    sliderTimer = setTimeout(update, 80);
+  });
+  document.getElementById('enc-x').addEventListener('change', () => drawScatter());
+  document.getElementById('enc-y').addEventListener('change', () => drawScatter());
+  document.getElementById('enc-color').addEventListener('change', () => drawScatter());
+}
+
+function setBarMode(mode) {
+  barMode = mode;
+  ['genre','platform','year'].forEach(m => {
+    document.getElementById('btn-'+m).classList.toggle('active', m===mode);
+  });
+  drawBar();
+}
+
+function toggleAbstract() {
+  abstractMode = !abstractMode;
+  const t = document.getElementById('abstract-toggle');
+  const l = document.getElementById('abstract-lbl');
+  t.classList.toggle('on', abstractMode);
+  l.textContent = abstractMode ? 'Show genre averages' : 'Show individual games';
+  drawScatter();
+}
+
+// ─────────────────────────────────────────────
+// STABLE DIMENSIONS HELPER
+// ─────────────────────────────────────────────
+const dimCache = {};
+function getDims(svgId) {
+  if (dimCache[svgId]) return dimCache[svgId];
+  const el = document.getElementById(svgId);
+  const box = el.parentElement;
+  const W = box.offsetWidth - 32;
+  const H = box.offsetHeight - 50;
+  if (W > 80 && H > 80) dimCache[svgId] = { W, H };
+  return { W: Math.max(W, 200), H: Math.max(H, 150) };
+}
+function clearDimCache() { Object.keys(dimCache).forEach(k => delete dimCache[k]); }
+
+// ─────────────────────────────────────────────
+// FILTER DATA
+// ─────────────────────────────────────────────
+function filterData() {
+  filteredData = allData.filter(d =>
+    selectedGenres.has(d.Genre) &&
+    d.Year >= yearFrom && d.Year <= yearTo
+  );
+}
+
+// ─────────────────────────────────────────────
+// UPDATE
+// ─────────────────────────────────────────────
+function update() {
+  clearDimCache();
+  filterData();
+  updateStats();
+  drawBar();
+  drawScatter();
+  drawTrend();
+  drawDonut();
+}
+
+function updateStats() {
+  const count = filteredData.length;
+  const total = d3.sum(filteredData, d=>d.Global).toFixed(1);
+  const top = filteredData[0];
+  const byGenre = d3.rollup(filteredData, v=>d3.sum(v,d=>d.Global), d=>d.Genre);
+  const topGenre = [...byGenre.entries()].sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('stat-count').textContent = count.toLocaleString();
+  document.getElementById('stat-global').textContent = total;
+  document.getElementById('stat-top').textContent = top ? top.Name.slice(0,18) : '—';
+  document.getElementById('stat-genre').textContent = topGenre ? topGenre[0] : '—';
+}
+
+// ─────────────────────────────────────────────
+// BAR CHART
+// ─────────────────────────────────────────────
+function drawBar() {
+  const svg = d3.select('#bar-chart');
+  svg.selectAll('*').remove();
+  const { W, H } = getDims('bar-chart');
+  svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+
+  const margin = {top:10, right:10, bottom:60, left:55};
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  let grouped;
+  let title;
+  if (barMode === 'genre') {
+    grouped = d3.rollup(filteredData, v=>d3.sum(v,d=>d.Global), d=>d.Genre);
+    title = 'Sales by Genre';
+  } else if (barMode === 'platform') {
+    grouped = d3.rollup(filteredData, v=>d3.sum(v,d=>d.Global), d=>d.Platform);
+    title = 'Sales by Platform';
+  } else {
+    grouped = d3.rollup(filteredData, v=>d3.sum(v,d=>d.Global), d=>d.Year);
+    title = 'Sales by Year';
+  }
+  document.getElementById('bar-title').textContent = title;
+
+  let data = [...grouped.entries()].sort((a,b)=>b[1]-a[1]);
+  if (barMode !== 'year') data = data.slice(0,12);
+  else data = data.sort((a,b)=>a[0]-b[0]);
+
+  if (!data.length) { g.append('text').attr('x',w/2).attr('y',h/2).attr('text-anchor','middle').attr('fill','#7b82a8').attr('font-size',12).text('No data'); return; }
+
+  const x = d3.scaleBand().domain(data.map(d=>d[0])).range([0,w]).padding(0.25);
+  const y = d3.scaleLinear().domain([0, d3.max(data,d=>d[1])*1.1]).range([h,0]);
+
+  // Gridlines
+  g.append('g').attr('class','grid')
+    .call(d3.axisLeft(y).ticks(5).tickSize(-w).tickFormat(''))
+    .call(g2=>{ g2.selectAll('line').attr('stroke','#2e3350').attr('stroke-dasharray','2,3'); g2.select('.domain').remove(); });
+
+  // Bars
+  g.selectAll('rect').data(data).join('rect')
+    .attr('x', d=>x(d[0]))
+    .attr('y', d=>y(d[1]))
+    .attr('width', x.bandwidth())
+    .attr('height', d=>h-y(d[1]))
+    .attr('rx', 3)
+    .attr('fill', d => {
+      if (barMode==='genre') return COLORS[d[0]] || '#6c63ff';
+      if (barMode==='platform') return platformColorMap[d[0]] || '#6c63ff';
+      return '#6c63ff';
+    })
+    .attr('opacity', d => selectedItem && barMode==='genre' && d[0]===selectedItem.Genre ? 1 : (selectedItem ? 0.4 : 0.85))
+    .style('cursor','pointer')
+    .on('mousemove', (e,d) => showTip(e, `<strong>${d[0]}</strong>${d[1].toFixed(1)}M units sold`))
+    .on('mouseleave', hideTip);
+
+  // Axes
+  g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).tickSize(0))
+    .call(g2=>{ g2.select('.domain').attr('stroke','#2e3350');
+      g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9).attr('transform','rotate(-35)').attr('text-anchor','end').attr('dx','-4').attr('dy','6'); });
+  g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d=>`${d}M`))
+    .call(g2=>{ g2.select('.domain').remove(); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
+}
+
+// ─────────────────────────────────────────────
+// SCATTER CHART
+// ─────────────────────────────────────────────
+function drawScatter() {
+  const svg = d3.select('#scatter-chart');
+  svg.selectAll('*').remove();
+  const { W, H } = getDims('scatter-chart');
+  svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+
+  const encX = document.getElementById('enc-x').value;
+  const encY = document.getElementById('enc-y').value;
+  const encC = document.getElementById('enc-color').value;
+
+  const margin = {top:10, right:10, bottom:45, left:55};
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  let plotData;
+  if (abstractMode) {
+    // Abstract: show genre averages
+    const grouped = d3.rollup(filteredData,
+      v => ({ x: d3.mean(v,d=>d[encX.replace('_Sales','').toLowerCase()==='na'?'NA':encX.replace('_Sales','').toLowerCase()==='eu'?'EU':encX.replace('_Sales','').toLowerCase()==='jp'?'JP':encX.replace('_Sales','').toLowerCase()==='global'?'Global':'NA']),
+               y: d3.mean(v,d=>d[encY.replace('_Sales','').toLowerCase()==='na'?'NA':encY.replace('_Sales','').toLowerCase()==='eu'?'EU':encY.replace('_Sales','').toLowerCase()==='jp'?'JP':'Global']),
+               Genre: v[0].Genre, Platform: v[0].Platform, count: v.length }),
+      d => d.Genre);
+    plotData = [...grouped.values()];
+  } else {
+    plotData = filteredData.slice(0,500); // limit for perf
+  }
+
+  const getVal = (d, enc) => {
+    const k = enc.replace('_Sales','');
+    if (k==='NA') return d.NA||d['NA_Sales']||0;
+    if (k==='EU') return d.EU||d['EU_Sales']||0;
+    if (k==='JP') return d.JP||d['JP_Sales']||0;
+    return d.Global||d['Global_Sales']||0;
+  };
+
+  const xVals = plotData.map(d=>getVal(d,encX));
+  const yVals = plotData.map(d=>getVal(d,encY));
+
+  const x = d3.scaleLinear().domain([0, d3.max(xVals)*1.1||1]).range([0,w]);
+  const y = d3.scaleLinear().domain([0, d3.max(yVals)*1.1||1]).range([h,0]);
+
+  // Grid
+  g.append('g').call(d3.axisLeft(y).ticks(5).tickSize(-w).tickFormat(''))
+    .call(g2=>{ g2.selectAll('line').attr('stroke','#2e3350').attr('stroke-dasharray','2,3'); g2.select('.domain').remove(); });
+  g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(5).tickSize(-h).tickFormat(''))
+    .call(g2=>{ g2.selectAll('line').attr('stroke','#2e3350').attr('stroke-dasharray','2,3'); g2.select('.domain').remove(); });
+
+  // Dots
+  g.selectAll('circle').data(plotData).join('circle')
+    .attr('cx', d=>x(getVal(d,encX)))
+    .attr('cy', d=>y(getVal(d,encY)))
+    .attr('r', abstractMode ? 8 : 4)
+    .attr('fill', d => encC==='Genre' ? (COLORS[d.Genre]||'#6c63ff') : (platformColorMap[d.Platform]||'#6c63ff'))
+    .attr('opacity', d => {
+      if (!selectedItem) return abstractMode ? 0.85 : 0.6;
+      const match = abstractMode ? d.Genre===selectedItem.Genre : d.id===selectedItem.id;
+      return match ? 1 : 0.15;
+    })
+    .attr('stroke', d => {
+      if (!selectedItem) return 'none';
+      const match = abstractMode ? d.Genre===selectedItem.Genre : d.id===selectedItem.id;
+      return match ? '#fff' : 'none';
+    })
+    .attr('stroke-width', 1.5)
+    .style('cursor','pointer')
+    // SELECT + ELABORATE + CONNECT
+    .on('click', (e,d) => {
+      const realD = abstractMode ? filteredData.filter(x=>x.Genre===d.Genre)[0] : d;
+      selectItem(realD);
+      openDetail(realD);
+    })
+    .on('mousemove', (e,d) => {
+      const xv = getVal(d,encX).toFixed(2);
+      const yv = getVal(d,encY).toFixed(2);
+      showTip(e, `<strong>${d.Name||d.Genre}</strong>${encX.replace('_',' ')}: ${xv}M<br/>${encY.replace('_',' ')}: ${yv}M`);
+    })
+    .on('mouseleave', hideTip);
+
+  // Labels for abstract mode
+  if (abstractMode) {
+    g.selectAll('.genre-lbl').data(plotData).join('text')
+      .attr('class','genre-lbl')
+      .attr('x', d=>x(getVal(d,encX))+10)
+      .attr('y', d=>y(getVal(d,encY))+4)
+      .attr('fill', d=>COLORS[d.Genre]||'#7b82a8')
+      .attr('font-size', 9)
+      .text(d=>d.Genre||d.Platform);
+  }
+
+  // Axes
+  g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(5).tickFormat(d=>`${d}M`))
+    .call(g2=>{ g2.select('.domain').attr('stroke','#2e3350'); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
+  g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d=>`${d}M`))
+    .call(g2=>{ g2.select('.domain').remove(); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
+
+  // Axis labels
+  g.append('text').attr('x',w/2).attr('y',h+38).attr('text-anchor','middle').attr('fill','#7b82a8').attr('font-size',10).text(encX.replace('_',' '));
+  g.append('text').attr('transform','rotate(-90)').attr('x',-h/2).attr('y',-42).attr('text-anchor','middle').attr('fill','#7b82a8').attr('font-size',10).text(encY.replace('_',' '));
+
+  document.getElementById('scatter-title').textContent = abstractMode ? `${encX.replace('_',' ')} vs ${encY.replace('_',' ')} (Genre Averages)` : `${encX.replace('_',' ')} vs ${encY.replace('_',' ')} (Individual Games)`;
+}
+
+// ─────────────────────────────────────────────
+// TREND CHART
+// ─────────────────────────────────────────────
+function drawTrend() {
+  const svg = d3.select('#trend-chart');
+  svg.selectAll('*').remove();
+  const { W, H } = getDims('trend-chart');
+  svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+
+  const margin = {top:10, right:10, bottom:40, left:55};
+  const w = W - margin.left - margin.right;
+  const h = H - margin.top - margin.bottom;
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const byYear = d3.rollup(filteredData, v=>d3.sum(v,d=>d.Global), d=>d.Year);
+  const data = [...byYear.entries()].sort((a,b)=>a[0]-b[0]);
+
+  if (!data.length) return;
+
+  const x = d3.scaleLinear().domain(d3.extent(data,d=>d[0])).range([0,w]);
+  const y = d3.scaleLinear().domain([0, d3.max(data,d=>d[1])*1.1]).range([h,0]);
+
+  // Area fill
+  const area = d3.area().x(d=>x(d[0])).y0(h).y1(d=>y(d[1])).curve(d3.curveMonotoneX);
+  const line = d3.line().x(d=>x(d[0])).y(d=>y(d[1])).curve(d3.curveMonotoneX);
+
+  // Gradient
+  const defs = svg.append('defs');
+  const grad = defs.append('linearGradient').attr('id','trend-grad').attr('gradientUnits','userSpaceOnUse').attr('x1',0).attr('y1',margin.top).attr('x2',0).attr('y2',h+margin.top);
+  grad.append('stop').attr('offset','0%').attr('stop-color','#6c63ff').attr('stop-opacity',0.4);
+  grad.append('stop').attr('offset','100%').attr('stop-color','#6c63ff').attr('stop-opacity',0.02);
+
+  g.append('path').datum(data).attr('d',area).attr('fill','url(#trend-grad)');
+  g.append('path').datum(data).attr('d',line).attr('fill','none').attr('stroke','#6c63ff').attr('stroke-width',2);
+
+  // Dots
+  g.selectAll('circle').data(data).join('circle')
+    .attr('cx',d=>x(d[0])).attr('cy',d=>y(d[1])).attr('r',3)
+    .attr('fill','#6c63ff').attr('stroke','var(--bg)').attr('stroke-width',1.5)
+    .on('mousemove',(e,d)=>showTip(e,`<strong>${d[0]}</strong>Total: ${d[1].toFixed(1)}M units`))
+    .on('mouseleave',hideTip);
+
+  // Axes
+  g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(8).tickFormat(d3.format('d')))
+    .call(g2=>{ g2.select('.domain').attr('stroke','#2e3350'); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
+  g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d=>`${d}M`))
+    .call(g2=>{ g2.select('.domain').remove(); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
+
+  // Highlight selected year range
+  g.append('rect')
+    .attr('x',x(yearFrom)).attr('y',0)
+    .attr('width',Math.max(0,x(yearTo)-x(yearFrom))).attr('height',h)
+    .attr('fill','#6c63ff').attr('opacity',0.06);
+}
+
+// ─────────────────────────────────────────────
+// DONUT CHART
+// ─────────────────────────────────────────────
+function drawDonut() {
+  const svg = d3.select('#donut-chart');
+  svg.selectAll('*').remove();
+  const { W, H } = getDims('donut-chart');
+  svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+
+  const data = [
+    { label:'NA', value: d3.sum(filteredData, d=>d.NA), color:'#6c63ff' },
+    { label:'EU', value: d3.sum(filteredData, d=>d.EU), color:'#ff6584' },
+    { label:'JP', value: d3.sum(filteredData, d=>d.JP), color:'#43e97b' },
+    { label:'Other', value: d3.sum(filteredData, d=>d.Other), color:'#ffd166' },
+  ];
+
+  const total = d3.sum(data,d=>d.value);
+  if (!total) return;
+
+  const cx = W/2, cy = H/2;
+  const r = Math.min(cx,cy) - 30;
+  const ir = r * 0.55;
+
+  const pie = d3.pie().value(d=>d.value).sort(null);
+  const arc = d3.arc().innerRadius(ir).outerRadius(r);
+  const arcHover = d3.arc().innerRadius(ir).outerRadius(r+6);
+
+  const g = svg.append('g').attr('transform',`translate(${cx},${cy})`);
+
+  const arcs = g.selectAll('path').data(pie(data)).join('path')
+    .attr('d',arc)
+    .attr('fill',d=>d.data.color)
+    .attr('stroke','var(--bg)').attr('stroke-width',2)
+    .attr('opacity', d => selectedItem ? (d.data.label==='NA'&&selectedItem.NA > selectedItem.EU ? 1 : 0.5) : 0.85)
+    .style('cursor','pointer')
+    .on('mousemove',(e,d)=>showTip(e,`<strong>${d.data.label}</strong>${d.data.value.toFixed(1)}M units (${(d.data.value/total*100).toFixed(1)}%)`))
+    .on('mouseleave',hideTip)
+    .on('mouseenter', function(e,d) { d3.select(this).attr('d',arcHover); })
+    .on('mouseleave', function(e,d) { d3.select(this).attr('d',arc); hideTip(); });
+
+  // Center text
+  g.append('text').attr('text-anchor','middle').attr('dy','-0.3em').attr('fill','var(--text)').attr('font-size',16).attr('font-family','Space Mono, monospace').text(`${total.toFixed(0)}M`);
+  g.append('text').attr('text-anchor','middle').attr('dy','1.2em').attr('fill','#7b82a8').attr('font-size',9).text('Total Sales');
+
+  // Legend
+  const legendG = svg.append('g').attr('transform',`translate(10,${H-60})`);
+  data.forEach((d,i)=>{
+    const row = legendG.append('g').attr('transform',`translate(${i*(W/4)},0)`);
+    row.append('rect').attr('width',8).attr('height',8).attr('rx',2).attr('fill',d.color);
+    row.append('text').attr('x',11).attr('y',8).attr('fill','#7b82a8').attr('font-size',9).text(`${d.label}: ${(d.value/total*100).toFixed(0)}%`);
+  });
+}
+
+// ─────────────────────────────────────────────
+// SELECT + CONNECT
+// ─────────────────────────────────────────────
+function selectItem(d) {
+  if (selectedItem && selectedItem.id === d.id) {
+    selectedItem = null;
+  } else {
+    selectedItem = d;
+  }
+  drawBar();
+  drawScatter();
+  drawDonut();
+}
+
+// ─────────────────────────────────────────────
+// ELABORATE – Detail Panel
+// ─────────────────────────────────────────────
+function openDetail(d) {
+  selectedItem = d;
+  document.getElementById('dp-name').textContent = d.Name;
+  document.getElementById('dp-platform').textContent = d.Platform;
+  document.getElementById('dp-year').textContent = d.Year;
+  document.getElementById('dp-genre').textContent = d.Genre;
+  document.getElementById('dp-publisher').textContent = d.Publisher;
+  document.getElementById('dp-global').textContent = `${d.Global}M units`;
+
+  const max = Math.max(d.NA, d.EU, d.JP, d.Other) || 1;
+  document.getElementById('bar-na').style.width = `${(d.NA/max*100)}%`;
+  document.getElementById('bar-eu').style.width = `${(d.EU/max*100)}%`;
+  document.getElementById('bar-jp').style.width = `${(d.JP/max*100)}%`;
+  document.getElementById('bar-other').style.width = `${(d.Other/max*100)}%`;
+  document.getElementById('lbl-na').textContent = `${d.NA}M`;
+  document.getElementById('lbl-eu').textContent = `${d.EU}M`;
+  document.getElementById('lbl-jp').textContent = `${d.JP}M`;
+  document.getElementById('lbl-other').textContent = `${d.Other}M`;
+
+  document.getElementById('detail-panel').classList.add('open');
+  drawBar(); drawDonut();
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  selectedItem = null;
+  drawBar(); drawScatter(); drawDonut();
+}
+
+// ─────────────────────────────────────────────
+// TOOLTIP
+// ─────────────────────────────────────────────
+function showTip(e, html) {
+  const tip = document.getElementById('tooltip');
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  tip.style.left = (e.clientX + 14) + 'px';
+  tip.style.top  = (e.clientY - 30) + 'px';
+}
+function hideTip() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────
+// RESIZE
+// ─────────────────────────────────────────────
+window.addEventListener('resize', () => { clearDimCache(); update(); });
+</script>
+</body>
+</html>
