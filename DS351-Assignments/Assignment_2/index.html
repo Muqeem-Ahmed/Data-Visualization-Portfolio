@@ -3,458 +3,291 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Global Video Game Sales Explorer</title>
+<title>Video Game Sales Explorer</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; background: #0f1117; color: #e8eaf6; }
-
-header { background: #1a1d27; border-bottom: 1px solid #2e3350; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
-header h1 { font-size: 1.1rem; color: #6c63ff; }
-header span { font-size: 0.75rem; color: #7b82a8; }
-
-.app { display: grid; grid-template-columns: 250px 1fr; height: calc(100vh - 49px); overflow: hidden; }
-
-.sidebar { background: #1a1d27; border-right: 1px solid #2e3350; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-.panel { background: #22263a; border: 1px solid #2e3350; border-radius: 6px; padding: 12px; }
-.panel h4 { font-size: 0.65rem; color: #7b82a8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-.panel h4 span { background: #6c63ff; color: #fff; font-size: 0.55rem; padding: 1px 5px; border-radius: 3px; margin-right: 5px; }
-
-.filter-item { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; padding: 3px 4px; border-radius: 4px; cursor: pointer; }
-.filter-item:hover { background: #2e3350; }
-.filter-item input { accent-color: #6c63ff; }
-.dot { width: 9px; height: 9px; border-radius: 50%; }
-
-.slider-row { display: flex; justify-content: space-between; font-size: 0.72rem; color: #7b82a8; margin-bottom: 4px; }
-input[type=range] { width: 100%; accent-color: #6c63ff; cursor: pointer; }
-
-select { width: 100%; background: #0f1117; border: 1px solid #2e3350; color: #e8eaf6; border-radius: 4px; padding: 4px 6px; font-size: 0.75rem; margin-top: 2px; cursor: pointer; }
-label.enc { font-size: 0.7rem; color: #7b82a8; display: block; margin-top: 6px; }
-
-.btn-row { display: flex; gap: 5px; }
-.btn { flex: 1; padding: 6px 4px; border: 1px solid #2e3350; background: #0f1117; color: #7b82a8; border-radius: 4px; font-size: 0.7rem; cursor: pointer; }
-.btn.active { background: #6c63ff; border-color: #6c63ff; color: #fff; }
-
-.toggle-wrap { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; }
-.toggle { width: 38px; height: 20px; background: #2e3350; border-radius: 10px; cursor: pointer; position: relative; transition: background .2s; }
-.toggle.on { background: #6c63ff; }
-.toggle::after { content:''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: left .2s; }
-.toggle.on::after { left: 21px; }
-.hint { font-size: 0.67rem; color: #7b82a8; margin-top: 6px; }
-
-.main { display: flex; flex-direction: column; overflow: hidden; }
-.stats { background: #1a1d27; border-bottom: 1px solid #2e3350; padding: 8px 20px; display: flex; gap: 28px; }
-.stat-val { font-size: 1rem; color: #6c63ff; font-weight: bold; }
-.stat-lbl { font-size: 0.65rem; color: #7b82a8; }
-
-.grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; background: #2e3350; height: calc(100vh - 103px); }
-.cell { background: #0f1117; padding: 14px; display: flex; flex-direction: column; overflow: hidden; }
-.cell h3 { font-size: 0.68rem; color: #7b82a8; text-transform: uppercase; margin-bottom: 6px; }
-.cell svg { display: block; overflow: hidden; }
-
-#detail { display: none; position: fixed; right: 0; top: 0; bottom: 0; width: 260px; background: #1a1d27; border-left: 1px solid #2e3350; padding: 18px; z-index: 100; flex-direction: column; gap: 8px; box-shadow: -4px 0 16px rgba(0,0,0,.5); }
-#detail.open { display: flex; }
-#detail h2 { font-size: 0.95rem; color: #ffd166; line-height: 1.4; margin-right: 20px; }
-.drow { display: flex; justify-content: space-between; font-size: 0.78rem; padding: 5px 0; border-bottom: 1px solid #2e3350; }
-.drow span:first-child { color: #7b82a8; }
-.close { position: absolute; top: 10px; right: 10px; background: #2e3350; border: none; color: #e8eaf6; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 0.85rem; }
-.rbar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; font-size: 0.72rem; }
-.rbar-lbl { width: 36px; color: #7b82a8; }
-.rbar-track { flex: 1; height: 7px; background: #2e3350; border-radius: 3px; overflow: hidden; }
-.rbar-fill { height: 100%; border-radius: 3px; }
-
-#tooltip { position: fixed; pointer-events: none; display: none; background: #22263a; border: 1px solid #2e3350; padding: 7px 10px; border-radius: 5px; font-size: 0.72rem; z-index: 200; max-width: 180px; line-height: 1.6; }
-#tooltip strong { color: #ffd166; display: block; }
-
-::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #2e3350; border-radius: 2px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#0f1117;color:#e8eaf6}
+header{background:#1a1d27;border-bottom:1px solid #2e3350;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:1rem;color:#6c63ff}
+header span{font-size:0.72rem;color:#7b82a8}
+.app{display:grid;grid-template-columns:240px 1fr;height:calc(100vh - 45px);overflow:hidden}
+.sidebar{background:#1a1d27;border-right:1px solid #2e3350;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.panel{background:#22263a;border:1px solid #2e3350;border-radius:6px;padding:10px}
+.panel h4{font-size:0.62rem;color:#7b82a8;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.panel h4 span{background:#6c63ff;color:#fff;font-size:0.52rem;padding:1px 4px;border-radius:3px;margin-right:4px}
+.fi{display:flex;align-items:center;gap:6px;font-size:0.75rem;padding:2px 3px;cursor:pointer}
+.fi input{accent-color:#6c63ff}
+.dot{width:8px;height:8px;border-radius:50%}
+.sr{display:flex;justify-content:space-between;font-size:0.7rem;color:#7b82a8;margin-bottom:3px}
+input[type=range]{width:100%;accent-color:#6c63ff;cursor:pointer}
+select{width:100%;background:#0f1117;border:1px solid #2e3350;color:#e8eaf6;border-radius:4px;padding:4px 6px;font-size:0.72rem;margin-top:2px;cursor:pointer}
+.el{font-size:0.68rem;color:#7b82a8;display:block;margin-top:5px}
+.br{display:flex;gap:4px}
+.btn{flex:1;padding:5px 3px;border:1px solid #2e3350;background:#0f1117;color:#7b82a8;border-radius:4px;font-size:0.68rem;cursor:pointer}
+.btn.on{background:#6c63ff;border-color:#6c63ff;color:#fff}
+.tw{display:flex;align-items:center;gap:8px;font-size:0.75rem}
+.tg{width:36px;height:18px;background:#2e3350;border-radius:9px;cursor:pointer;position:relative}
+.tg.on{background:#6c63ff}
+.tg::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%}
+.tg.on::after{left:20px}
+.main{display:flex;flex-direction:column;overflow:hidden}
+.stats{background:#1a1d27;border-bottom:1px solid #2e3350;padding:7px 18px;display:flex;gap:24px}
+.sv{font-size:0.95rem;color:#6c63ff;font-weight:bold}
+.sl{font-size:0.62rem;color:#7b82a8}
+.grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:#2e3350;height:calc(100vh - 97px)}
+.cell{background:#0f1117;padding:12px;display:flex;flex-direction:column;overflow:hidden}
+.cell h3{font-size:0.65rem;color:#7b82a8;text-transform:uppercase;margin-bottom:5px}
+.cell svg{display:block;overflow:hidden}
+#dp{display:none;position:fixed;right:0;top:0;bottom:0;width:250px;background:#1a1d27;border-left:1px solid #2e3350;padding:16px;z-index:100;flex-direction:column;gap:7px}
+#dp.open{display:flex}
+#dp h2{font-size:0.9rem;color:#ffd166;line-height:1.4;margin-right:18px}
+.dr{display:flex;justify-content:space-between;font-size:0.75rem;padding:4px 0;border-bottom:1px solid #2e3350}
+.dr span:first-child{color:#7b82a8}
+.xb{position:absolute;top:8px;right:8px;background:#2e3350;border:none;color:#e8eaf6;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:0.8rem}
+.rb{display:flex;align-items:center;gap:5px;margin-bottom:4px;font-size:0.7rem}
+.rl{width:32px;color:#7b82a8}
+.rt{flex:1;height:6px;background:#2e3350;border-radius:3px;overflow:hidden}
+.rf{height:100%;border-radius:3px}
+#tt{position:fixed;pointer-events:none;display:none;background:#22263a;border:1px solid #2e3350;padding:6px 9px;border-radius:5px;font-size:0.7rem;z-index:200;max-width:170px;line-height:1.5}
+#tt strong{color:#ffd166;display:block}
 </style>
 </head>
 <body>
-
 <header>
   <h1>🎮 Video Game Sales Explorer</h1>
-  <span>16,000+ games · 1980–2016 · Global Sales</span>
+  <span id="hdr">Loading dataset...</span>
 </header>
-
 <div class="app">
 <aside class="sidebar">
-
-  <div class="panel">
-    <h4><span>FILTER</span>Genre</h4>
-    <div id="genre-list"></div>
-  </div>
-
+  <div class="panel"><h4><span>FILTER</span>Genre</h4><div id="gl"></div></div>
   <div class="panel">
     <h4><span>FILTER</span>Year Range</h4>
-    <div class="slider-row"><span>From: <b id="lbl-from">1980</b></span><span>To: <b id="lbl-to">2016</b></span></div>
-    <input type="range" id="sl-from" min="1980" max="2016" value="1980"/>
-    <input type="range" id="sl-to"   min="1980" max="2016" value="2016"/>
+    <div class="sr"><span>From: <b id="lf">1980</b></span><span>To: <b id="lt">2016</b></span></div>
+    <input type="range" id="sf" min="1980" max="2016" value="1980"/>
+    <input type="range" id="st" min="1980" max="2016" value="2016"/>
   </div>
-
   <div class="panel">
     <h4><span>ENCODE</span>Visual Mapping</h4>
-    <label class="enc">X Axis</label>
-    <select id="enc-x">
-      <option value="NA">NA Sales</option><option value="EU">EU Sales</option>
-      <option value="JP">JP Sales</option><option value="Global" selected>Global Sales</option>
-    </select>
-    <label class="enc">Y Axis</label>
-    <select id="enc-y">
-      <option value="EU" selected>EU Sales</option><option value="NA">NA Sales</option>
-      <option value="JP">JP Sales</option><option value="Global">Global Sales</option>
-    </select>
-    <label class="enc">Color By</label>
-    <select id="enc-c">
-      <option value="Genre" selected>Genre</option><option value="Platform">Platform</option>
-    </select>
+    <span class="el">X Axis</span>
+    <select id="ex"><option value="NA">NA Sales</option><option value="EU">EU Sales</option><option value="JP">JP Sales</option><option value="Global" selected>Global Sales</option></select>
+    <span class="el">Y Axis</span>
+    <select id="ey"><option value="EU" selected>EU Sales</option><option value="NA">NA Sales</option><option value="JP">JP Sales</option><option value="Global">Global Sales</option></select>
+    <span class="el">Color By</span>
+    <select id="ec"><option value="Genre" selected>Genre</option><option value="Platform">Platform</option></select>
   </div>
-
   <div class="panel">
     <h4><span>RECONFIGURE</span>Bar Chart</h4>
-    <div class="btn-row">
-      <button class="btn active" onclick="setBar('genre',this)">Genre</button>
+    <div class="br">
+      <button class="btn on" onclick="setBar('genre',this)">Genre</button>
       <button class="btn" onclick="setBar('platform',this)">Platform</button>
       <button class="btn" onclick="setBar('year',this)">Year</button>
     </div>
   </div>
-
   <div class="panel">
     <h4><span>ABSTRACT</span>Aggregation</h4>
-    <div class="toggle-wrap">
-      <div class="toggle" id="tog" onclick="toggleAbs()"></div>
-      <span id="tog-lbl">Individual games</span>
-    </div>
-    <div class="hint">Toggle to show genre averages in scatter.</div>
+    <div class="tw"><div class="tg" id="tg" onclick="toggleAbs()"></div><span id="tl">Individual games</span></div>
   </div>
-
 </aside>
-
 <main class="main">
   <div class="stats">
-    <div><div class="stat-val" id="s-count">—</div><div class="stat-lbl">Games</div></div>
-    <div><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Global Sales (M)</div></div>
-    <div><div class="stat-val" id="s-top">—</div><div class="stat-lbl">Top Game</div></div>
-    <div><div class="stat-val" id="s-genre">—</div><div class="stat-lbl">Top Genre</div></div>
+    <div><div class="sv" id="sc">—</div><div class="sl">Games</div></div>
+    <div><div class="sv" id="sg">—</div><div class="sl">Global Sales (M)</div></div>
+    <div><div class="sv" id="st2">—</div><div class="sl">Top Game</div></div>
+    <div><div class="sv" id="sG">—</div><div class="sl">Top Genre</div></div>
   </div>
   <div class="grid">
-    <div class="cell"><h3 id="bar-title">Sales by Genre</h3><svg id="bar"></svg></div>
-    <div class="cell"><h3 id="sc-title">Regional Sales Scatter</h3><svg id="scatter"></svg></div>
-    <div class="cell"><h3>Global Sales Trend by Year</h3><svg id="trend"></svg></div>
-    <div class="cell"><h3>Regional Sales Breakdown</h3><svg id="donut"></svg></div>
+    <div class="cell"><h3 id="bt">Sales by Genre</h3><svg id="bar"></svg></div>
+    <div class="cell"><h3 id="sct">Regional Sales Scatter</h3><svg id="sct2"></svg></div>
+    <div class="cell"><h3>Global Sales Trend</h3><svg id="tr"></svg></div>
+    <div class="cell"><h3>Regional Breakdown</h3><svg id="dn"></svg></div>
   </div>
 </main>
 </div>
 
-<div id="detail">
-  <button class="close" onclick="closeDetail()">✕</button>
-  <h2 id="d-name"></h2>
-  <div class="drow"><span>Platform</span><span id="d-plat"></span></div>
-  <div class="drow"><span>Year</span><span id="d-year"></span></div>
-  <div class="drow"><span>Genre</span><span id="d-genre"></span></div>
-  <div class="drow"><span>Publisher</span><span id="d-pub"></span></div>
-  <div class="drow"><span>Global Sales</span><span id="d-global"></span></div>
-  <div style="margin-top:8px;font-size:0.7rem;color:#7b82a8;margin-bottom:6px;">Regional Breakdown</div>
-  <div class="rbar-row"><span class="rbar-lbl">NA</span><div class="rbar-track"><div class="rbar-fill" id="rb-na" style="background:#6c63ff"></div></div><span id="rl-na"></span></div>
-  <div class="rbar-row"><span class="rbar-lbl">EU</span><div class="rbar-track"><div class="rbar-fill" id="rb-eu" style="background:#ff6584"></div></div><span id="rl-eu"></span></div>
-  <div class="rbar-row"><span class="rbar-lbl">JP</span><div class="rbar-track"><div class="rbar-fill" id="rb-jp" style="background:#43e97b"></div></div><span id="rl-jp"></span></div>
-  <div class="rbar-row"><span class="rbar-lbl">Other</span><div class="rbar-track"><div class="rbar-fill" id="rb-other" style="background:#ffd166"></div></div><span id="rl-other"></span></div>
+<div id="dp">
+  <button class="xb" onclick="closeDP()">✕</button>
+  <h2 id="dn2"></h2>
+  <div class="dr"><span>Platform</span><span id="dp-pl"></span></div>
+  <div class="dr"><span>Year</span><span id="dp-yr"></span></div>
+  <div class="dr"><span>Genre</span><span id="dp-gn"></span></div>
+  <div class="dr"><span>Publisher</span><span id="dp-pb"></span></div>
+  <div class="dr"><span>Global Sales</span><span id="dp-gl"></span></div>
+  <div style="margin-top:7px;font-size:0.68rem;color:#7b82a8;margin-bottom:5px">Regional Breakdown</div>
+  <div class="rb"><span class="rl">NA</span><div class="rt"><div class="rf" id="rb-na" style="background:#6c63ff"></div></div><span id="rv-na"></span></div>
+  <div class="rb"><span class="rl">EU</span><div class="rt"><div class="rf" id="rb-eu" style="background:#ff6584"></div></div><span id="rv-eu"></span></div>
+  <div class="rb"><span class="rl">JP</span><div class="rt"><div class="rf" id="rb-jp" style="background:#43e97b"></div></div><span id="rv-jp"></span></div>
+  <div class="rb"><span class="rl">Other</span><div class="rt"><div class="rf" id="rb-ot" style="background:#ffd166"></div></div><span id="rv-ot"></span></div>
 </div>
-
-<div id="tooltip"></div>
+<div id="tt"></div>
 
 <script>
-// ── CONFIG ──
-const COLORS = { Action:'#6c63ff',Sports:'#ff6584',Shooter:'#43e97b','Role-Playing':'#ffd166',Platform:'#4fc3f7',Racing:'#ff9a9e',Fighting:'#a18cd1',Simulation:'#fda085',Strategy:'#f5576c',Adventure:'#4facfe',Misc:'#7b82a8',Puzzle:'#00f2fe' };
-const GENRES = Object.keys(COLORS);
-const PCOLS = d3.schemeTableau10;
-let pMap = {}, allData = [], fData = [], selected = null;
-let yFrom = 1980, yTo = 2016, barMode = 'genre', absMode = false;
+const C={Action:'#6c63ff',Sports:'#ff6584',Shooter:'#43e97b','Role-Playing':'#ffd166',Platform:'#4fc3f7',Racing:'#ff9a9e',Fighting:'#a18cd1',Simulation:'#fda085',Strategy:'#f5576c',Adventure:'#4facfe',Misc:'#7b82a8',Puzzle:'#00f2fe'};
+const GS=Object.keys(C), PC=d3.schemeTableau10;
+let PM={},all=[],fd=[],sel=null,bm='genre',abs=false,yF=1980,yT=2016;
 
-// ── DATA ──
-function genData() {
-  const famous = [
-    ['Wii Sports','Wii',2006,'Sports','Nintendo',41.49,29.02,3.77,8.46,82.74],
-    ['Super Mario Bros.','NES',1985,'Platform','Nintendo',29.08,3.58,6.81,0.77,40.24],
-    ['Mario Kart Wii','Wii',2008,'Racing','Nintendo',15.85,12.88,3.79,3.31,35.82],
-    ['Wii Sports Resort','Wii',2009,'Sports','Nintendo',15.75,11.01,3.28,2.96,33.00],
-    ['Pokemon Red/Blue','GB',1996,'Role-Playing','Nintendo',11.27,8.89,10.22,1.00,31.37],
-    ['Tetris','GB',1989,'Puzzle','Nintendo',23.20,2.26,4.22,0.58,30.26],
-    ['New Super Mario Bros.','DS',2006,'Platform','Nintendo',11.38,9.23,6.50,2.90,30.01],
-    ['Duck Hunt','NES',1984,'Shooter','Nintendo',26.93,0.63,0.28,0.47,28.31],
-    ['Call of Duty: Black Ops','X360',2010,'Shooter','Activision',14.64,6.14,0.45,1.41,22.64],
-    ['Grand Theft Auto V','PS3',2013,'Action','Take-Two Interactive',7.01,9.27,0.97,4.14,21.40],
-    ['Gran Turismo 3','PS2',2001,'Racing','Sony Computer Entertainment',6.97,5.68,1.87,1.04,15.56],
-    ['Halo 3','X360',2007,'Shooter','Microsoft Game Studios',7.94,3.48,0.12,0.80,12.34],
-    ['Minecraft','X360',2013,'Misc','Microsoft Game Studios',6.44,4.46,0.46,1.68,13.04],
-    ['Skyrim','X360',2011,'Role-Playing','Bethesda',7.17,4.23,0.21,1.20,12.81],
-    ['FIFA 16','PS4',2015,'Sports','Electronic Arts',2.37,7.51,0.08,1.30,11.26],
-    ['Pokemon Gold/Silver','GB',1999,'Role-Playing','Nintendo',9.00,6.18,7.20,0.71,23.10],
-    ['Super Mario World','SNES',1990,'Platform','Nintendo',20.61,2.26,3.54,0.58,26.93],
-    ['Nintendogs','DS',2005,'Simulation','Nintendo',9.07,6.85,1.93,2.52,24.76],
-    ['Super Smash Bros. Brawl','Wii',2008,'Fighting','Nintendo',13.30,4.97,3.25,1.03,22.55],
-    ['Pokemon X/Y','3DS',2013,'Role-Playing','Nintendo',6.61,4.20,4.20,1.00,16.01],
-  ];
-  const plats = ['PS2','X360','PS3','Wii','DS','PS','GBA','PS4','3DS','N64','GC','XB','PC','PSP','NES','SNES'];
-  const pubs  = ['Nintendo','Electronic Arts','Activision','Sony Computer Entertainment','Ubisoft','Take-Two Interactive','Konami','Sega','Capcom','Namco Bandai','Bethesda','2K Games','Bandai'];
-  let s = 42;
-  const rnd  = () => { s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/4294967296; };
-  const pick = a => a[Math.floor(rnd()*a.length)];
-  const expo = r => -Math.log(1-rnd()+1e-10)/r;
-
-  const rows = famous.map((r,i) => ({ id:i, Name:r[0],Platform:r[1],Year:r[2],Genre:r[3],Publisher:r[4],NA:r[5],EU:r[6],JP:r[7],Other:r[8],Global:r[9] }));
-  for (let i = 0; i < 15980; i++) {
-    const na=+Math.min(expo(1.8),25).toFixed(2), eu=+Math.min(expo(2.2),18).toFixed(2),
-          jp=+Math.min(expo(3.5),12).toFixed(2), ot=+Math.min(expo(6.0),6).toFixed(2);
-    rows.push({ id:famous.length+i, Name:`Game ${i+1}`, Platform:pick(plats), Year:1980+Math.floor(rnd()*37),
-      Genre:pick(GENRES), Publisher:pick(pubs), NA:na, EU:eu, JP:jp, Other:ot, Global:+(na+eu+jp+ot).toFixed(2) });
-  }
-  return rows.sort((a,b) => b.Global - a.Global);
-}
-
-// ── INIT ──
-window.addEventListener('load', () => {
-  allData = genData();
-  [...new Set(allData.map(d=>d.Platform))].forEach((p,i) => pMap[p] = PCOLS[i % PCOLS.length]);
-  buildFilters();
-  bindControls();
-  requestAnimationFrame(() => requestAnimationFrame(update));
+// Load CSV from GitHub repo
+const REPO='https://raw.githubusercontent.com/muqeem-ahmed/DS351_Assignment_2/main/vgsales.csv';
+d3.csv(REPO, d=>({
+  id:+d.Rank, Name:d.Name, Platform:d.Platform, Year:+d.Year_of_Release,
+  Genre:d.Genre, Publisher:d.Publisher,
+  NA:+d.NA_Sales, EU:+d.EU_Sales, JP:+d.JP_Sales, Other:+d.Other_Sales, Global:+d.Global_Sales
+})).then(data => {
+  all = data.filter(d => d.Year >= 1980 && d.Year <= 2016 && GS.includes(d.Genre));
+  [...new Set(all.map(d=>d.Platform))].forEach((p,i) => PM[p]=PC[i%PC.length]);
+  document.getElementById('hdr').textContent = `${all.length.toLocaleString()} games · 1980–2016 · Global Sales`;
+  buildUI();
+  requestAnimationFrame(()=>requestAnimationFrame(update));
+}).catch(()=>{
+  document.getElementById('hdr').textContent = 'Error loading dataset — check repo URL';
 });
 
-function buildFilters() {
-  const el = document.getElementById('genre-list');
-  GENRES.forEach(g => {
-    el.insertAdjacentHTML('beforeend',
-      `<label class="filter-item"><input type="checkbox" checked data-g="${g}" onchange="update()"/>
-       <span class="dot" style="background:${COLORS[g]}"></span>${g}</label>`);
-  });
-}
-
-function bindControls() {
+function buildUI() {
+  const el=document.getElementById('gl');
+  GS.forEach(g => el.insertAdjacentHTML('beforeend',
+    `<label class="fi"><input type="checkbox" checked data-g="${g}" onchange="update()"/>
+     <span class="dot" style="background:${C[g]}"></span>${g}</label>`));
   let t;
-  ['sl-from','sl-to'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => {
-      yFrom = +document.getElementById('sl-from').value;
-      yTo   = +document.getElementById('sl-to').value;
-      if (yFrom > yTo) { yTo = yFrom; document.getElementById('sl-to').value = yFrom; }
-      document.getElementById('lbl-from').textContent = yFrom;
-      document.getElementById('lbl-to').textContent   = yTo;
-      clearTimeout(t); t = setTimeout(update, 80);
-    });
-  });
-  ['enc-x','enc-y','enc-c'].forEach(id => document.getElementById(id).addEventListener('change', drawScatter));
+  ['sf','st'].forEach(id => document.getElementById(id).addEventListener('input',()=>{
+    yF=+document.getElementById('sf').value; yT=+document.getElementById('st').value;
+    if(yF>yT){yT=yF;document.getElementById('st').value=yF;}
+    document.getElementById('lf').textContent=yF; document.getElementById('lt').textContent=yT;
+    clearTimeout(t); t=setTimeout(update,80);
+  }));
+  ['ex','ey','ec'].forEach(id=>document.getElementById(id).addEventListener('change',drawSc));
 }
 
-function setBar(m, btn) {
-  barMode = m;
-  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  drawBar();
+function setBar(m,b){bm=m;document.querySelectorAll('.btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');drawBar();}
+function toggleAbs(){abs=!abs;document.getElementById('tg').classList.toggle('on',abs);document.getElementById('tl').textContent=abs?'Genre averages':'Individual games';drawSc();}
+
+function filter(){
+  const ch=new Set([...document.querySelectorAll('#gl input:checked')].map(c=>c.dataset.g));
+  fd=all.filter(d=>ch.has(d.Genre)&&d.Year>=yF&&d.Year<=yT);
 }
 
-function toggleAbs() {
-  absMode = !absMode;
-  document.getElementById('tog').classList.toggle('on', absMode);
-  document.getElementById('tog-lbl').textContent = absMode ? 'Genre averages' : 'Individual games';
-  drawScatter();
-}
-
-// ── FILTER + UPDATE ──
-function filter() {
-  const checked = new Set([...document.querySelectorAll('#genre-list input:checked')].map(c => c.dataset.g));
-  fData = allData.filter(d => checked.has(d.Genre) && d.Year >= yFrom && d.Year <= yTo);
-}
-
-function update() {
+function update(){
   filter();
-  document.getElementById('s-count').textContent = fData.length.toLocaleString();
-  document.getElementById('s-total').textContent = d3.sum(fData, d=>d.Global).toFixed(1);
-  document.getElementById('s-top').textContent   = fData[0]?.Name.slice(0,16) || '—';
-  const tg = [...d3.rollup(fData, v=>d3.sum(v,d=>d.Global), d=>d.Genre)].sort((a,b)=>b[1]-a[1])[0];
-  document.getElementById('s-genre').textContent = tg?.[0] || '—';
-  drawBar(); drawScatter(); drawTrend(); drawDonut();
+  document.getElementById('sc').textContent=fd.length.toLocaleString();
+  document.getElementById('sg').textContent=d3.sum(fd,d=>d.Global).toFixed(1);
+  document.getElementById('st2').textContent=fd[0]?.Name.slice(0,15)||'—';
+  const tg=[...d3.rollup(fd,v=>d3.sum(v,d=>d.Global),d=>d.Genre)].sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('sG').textContent=tg?.[0]||'—';
+  drawBar();drawSc();drawTr();drawDn();
 }
 
-// ── HELPERS ──
-function dims(id) {
-  const box = document.getElementById(id).parentElement;
-  return { W: Math.max(box.offsetWidth-28, 100), H: Math.max(box.offsetHeight-40, 80) };
+function D(id){const b=document.getElementById(id).parentElement;return{W:Math.max(b.offsetWidth-24,100),H:Math.max(b.offsetHeight-36,80)};}
+const tt=document.getElementById('tt');
+function tip(e,h){tt.innerHTML=h;tt.style.display='block';tt.style.left=(e.clientX+10)+'px';tt.style.top=(e.clientY-26)+'px';}
+function ht(){tt.style.display='none';}
+function mkSvg(id){const {W,H}=D(id);const s=d3.select('#'+id);s.selectAll('*').remove();s.attr('viewBox',`0 0 ${W} ${H}`).attr('width',W).attr('height',H);return{s,W,H};}
+function grid(g,sc,type,W,H){
+  const a=type==='x'?d3.axisBottom(sc).ticks(5).tickSize(-H):d3.axisLeft(sc).ticks(5).tickSize(-W);
+  g.append('g').attr('transform',type==='x'?`translate(0,${H})`:'').call(a.tickFormat(''))
+   .call(g2=>{g2.selectAll('line').attr('stroke','#2e3350').attr('stroke-dasharray','2,3');g2.select('.domain').remove();});
 }
-const tip = document.getElementById('tooltip');
-function showTip(e, html) { tip.innerHTML=html; tip.style.display='block'; tip.style.left=(e.clientX+12)+'px'; tip.style.top=(e.clientY-28)+'px'; }
-function hideTip() { tip.style.display='none'; }
-function ax(g, scale, type, fmt, fs=9) {
-  const axis = type==='x' ? d3.axisBottom(scale) : d3.axisLeft(scale);
-  g.call(axis.ticks(5).tickFormat(fmt))
-   .call(g2=>{ g2.select('.domain').attr('stroke',type==='x'?'#2e3350':'none'); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',fs); if(type==='y') g2.select('.domain').remove(); });
-}
+function axB(g,sc,H){g.append('g').attr('transform',`translate(0,${H})`).call(d3.axisBottom(sc).ticks(8).tickFormat(d3.format('d'))).call(g2=>{g2.select('.domain').attr('stroke','#2e3350');g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9);});}
+function axL(g,sc){g.append('g').call(d3.axisLeft(sc).ticks(5).tickFormat(d=>`${d}M`)).call(g2=>{g2.select('.domain').remove();g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9);});}
+function axBx(g,sc,H){g.append('g').attr('transform',`translate(0,${H})`).call(d3.axisBottom(sc).tickSize(0)).call(g2=>{g2.select('.domain').attr('stroke','#2e3350');g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9).attr('transform','rotate(-35)').attr('text-anchor','end').attr('dx','-4').attr('dy','6');});}
 
-// ── BAR ──
-function drawBar() {
-  const svg = d3.select('#bar'); svg.selectAll('*').remove();
-  const {W,H} = dims('bar');
-  svg.attr('viewBox',`0 0 ${W} ${H}`).attr('width',W).attr('height',H);
-  const m={t:8,r:8,b:55,l:50}, w=W-m.l-m.r, h=H-m.t-m.b;
-  const g = svg.append('g').attr('transform',`translate(${m.l},${m.t})`);
-
-  const key = barMode==='genre'?'Genre':barMode==='platform'?'Platform':'Year';
-  let data = [...d3.rollup(fData, v=>d3.sum(v,d=>d.Global), d=>d[key])].sort((a,b)=>b[1]-a[1]);
-  if (barMode!=='year') data=data.slice(0,12); else data=data.sort((a,b)=>a[0]-b[0]);
-  document.getElementById('bar-title').textContent = `Sales by ${barMode==='genre'?'Genre':barMode==='platform'?'Platform':'Year'}`;
-
-  const x = d3.scaleBand().domain(data.map(d=>d[0])).range([0,w]).padding(0.25);
-  const y = d3.scaleLinear().domain([0,(d3.max(data,d=>d[1])||1)*1.1]).range([h,0]);
-
-  g.append('g').call(d3.axisLeft(y).ticks(5).tickSize(-w).tickFormat(''))
-   .call(g2=>{ g2.selectAll('line').attr('stroke','#2e3350').attr('stroke-dasharray','2,3'); g2.select('.domain').remove(); });
-
+function drawBar(){
+  const {s,W,H}=mkSvg('bar');
+  const m={t:6,r:6,b:52,l:48},w=W-m.l-m.r,h=H-m.t-m.b;
+  const g=s.append('g').attr('transform',`translate(${m.l},${m.t})`);
+  const key=bm==='genre'?'Genre':bm==='platform'?'Platform':'Year';
+  let data=[...d3.rollup(fd,v=>d3.sum(v,d=>d.Global),d=>d[key])].sort((a,b)=>b[1]-a[1]);
+  if(bm!=='year')data=data.slice(0,12);else data=data.sort((a,b)=>a[0]-b[0]);
+  document.getElementById('bt').textContent=`Sales by ${bm==='genre'?'Genre':bm==='platform'?'Platform':'Year'}`;
+  const x=d3.scaleBand().domain(data.map(d=>d[0])).range([0,w]).padding(0.25);
+  const y=d3.scaleLinear().domain([0,(d3.max(data,d=>d[1])||1)*1.1]).range([h,0]);
+  grid(g,y,'y',w,h);
   g.selectAll('rect').data(data).join('rect')
     .attr('x',d=>x(d[0])).attr('y',d=>y(d[1])).attr('width',x.bandwidth()).attr('height',d=>h-y(d[1])).attr('rx',3)
-    .attr('fill',d=>barMode==='genre'?COLORS[d[0]]||'#6c63ff':barMode==='platform'?pMap[d[0]]||'#6c63ff':'#6c63ff')
-    .attr('opacity',d=>selected&&barMode==='genre'?d[0]===selected.Genre?1:0.3:0.85)
-    .on('mousemove',(e,d)=>showTip(e,`<strong>${d[0]}</strong>${d[1].toFixed(1)}M units`))
-    .on('mouseleave',hideTip);
-
-  g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).tickSize(0))
-   .call(g2=>{ g2.select('.domain').attr('stroke','#2e3350'); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9).attr('transform','rotate(-35)').attr('text-anchor','end').attr('dx','-4').attr('dy','6'); });
-  g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d=>`${d}M`))
-   .call(g2=>{ g2.select('.domain').remove(); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
+    .attr('fill',d=>bm==='genre'?C[d[0]]||'#6c63ff':bm==='platform'?PM[d[0]]||'#6c63ff':'#6c63ff')
+    .attr('opacity',d=>sel&&bm==='genre'?d[0]===sel.Genre?1:0.3:0.85)
+    .on('mousemove',(e,d)=>tip(e,`<strong>${d[0]}</strong>${d[1].toFixed(1)}M units`)).on('mouseleave',ht);
+  axBx(g,x,h); axL(g,y);
 }
 
-// ── SCATTER ──
-function drawScatter() {
-  const svg = d3.select('#scatter'); svg.selectAll('*').remove();
-  const {W,H} = dims('scatter');
-  svg.attr('viewBox',`0 0 ${W} ${H}`).attr('width',W).attr('height',H);
-  const m={t:8,r:8,b:40,l:50}, w=W-m.l-m.r, h=H-m.t-m.b;
-  const g = svg.append('g').attr('transform',`translate(${m.l},${m.t})`);
-
-  const ex=document.getElementById('enc-x').value, ey=document.getElementById('enc-y').value, ec=document.getElementById('enc-c').value;
-
-  let pts = absMode
-    ? [...d3.rollup(fData, v=>({ id:v[0].id, Name:v[0].Genre, Genre:v[0].Genre, Platform:v[0].Platform, [ex]:d3.mean(v,d=>d[ex]), [ey]:d3.mean(v,d=>d[ey]) }), d=>d.Genre)].map(([,v])=>v)
-    : fData.slice(0, 500);
-
-  const x = d3.scaleLinear().domain([0,(d3.max(pts,d=>d[ex])||1)*1.1]).range([0,w]);
-  const y = d3.scaleLinear().domain([0,(d3.max(pts,d=>d[ey])||1)*1.1]).range([h,0]);
-
-  g.append('g').call(d3.axisLeft(y).ticks(5).tickSize(-w).tickFormat(''))
-   .call(g2=>{ g2.selectAll('line').attr('stroke','#2e3350').attr('stroke-dasharray','2,3'); g2.select('.domain').remove(); });
-  g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(5).tickSize(-h).tickFormat(''))
-   .call(g2=>{ g2.selectAll('line').attr('stroke','#2e3350').attr('stroke-dasharray','2,3'); g2.select('.domain').remove(); });
-
+function drawSc(){
+  const {s,W,H}=mkSvg('sct2');
+  const m={t:6,r:6,b:38,l:48},w=W-m.l-m.r,h=H-m.t-m.b;
+  const g=s.append('g').attr('transform',`translate(${m.l},${m.t})`);
+  const ex=document.getElementById('ex').value,ey=document.getElementById('ey').value,ec=document.getElementById('ec').value;
+  const pts=abs?[...d3.rollup(fd,v=>({id:v[0].id,Name:v[0].Genre,Genre:v[0].Genre,Platform:v[0].Platform,[ex]:d3.mean(v,d=>d[ex]),[ey]:d3.mean(v,d=>d[ey])}),d=>d.Genre)].map(([,v])=>v):fd.slice(0,500);
+  const x=d3.scaleLinear().domain([0,(d3.max(pts,d=>d[ex])||1)*1.1]).range([0,w]);
+  const y=d3.scaleLinear().domain([0,(d3.max(pts,d=>d[ey])||1)*1.1]).range([h,0]);
+  grid(g,y,'y',w,h); grid(g,x,'x',w,h);
   g.selectAll('circle').data(pts).join('circle')
-    .attr('cx',d=>x(d[ex]||0)).attr('cy',d=>y(d[ey]||0)).attr('r',absMode?9:4)
-    .attr('fill',d=>ec==='Genre'?COLORS[d.Genre]||'#6c63ff':pMap[d.Platform]||'#6c63ff')
-    .attr('opacity',d=>selected?(absMode?d.Genre===selected.Genre:d.id===selected.id)?1:0.15:absMode?0.85:0.6)
-    .attr('stroke',d=>selected&&(absMode?d.Genre===selected.Genre:d.id===selected.id)?'#fff':'none')
-    .attr('stroke-width',1.5).style('cursor','pointer')
-    .on('click',(e,d)=>{ const r=absMode?fData.find(x=>x.Genre===d.Genre):d; selectPt(r); openDetail(r); })
-    .on('mousemove',(e,d)=>showTip(e,`<strong>${d.Name||d.Genre}</strong>${ex}: ${(d[ex]||0).toFixed(2)}M<br>${ey}: ${(d[ey]||0).toFixed(2)}M`))
-    .on('mouseleave',hideTip);
-
-  if (absMode) g.selectAll('text.lbl').data(pts).join('text').attr('class','lbl')
-    .attr('x',d=>x(d[ex]||0)+11).attr('y',d=>y(d[ey]||0)+4).attr('fill',d=>COLORS[d.Genre]||'#7b82a8').attr('font-size',9).text(d=>d.Genre);
-
-  g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(5).tickFormat(d=>`${d}M`))
-   .call(g2=>{ g2.select('.domain').attr('stroke','#2e3350'); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
-  g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d=>`${d}M`))
-   .call(g2=>{ g2.select('.domain').remove(); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
-
-  document.getElementById('sc-title').textContent = absMode ? `${ex} vs ${ey} (Genre Averages)` : `${ex} vs ${ey} (Games)`;
+    .attr('cx',d=>x(d[ex]||0)).attr('cy',d=>y(d[ey]||0)).attr('r',abs?8:4)
+    .attr('fill',d=>ec==='Genre'?C[d.Genre]||'#6c63ff':PM[d.Platform]||'#6c63ff')
+    .attr('opacity',d=>sel?(abs?d.Genre===sel.Genre:d.id===sel.id)?1:0.15:abs?0.85:0.6)
+    .attr('stroke',d=>sel&&(abs?d.Genre===sel.Genre:d.id===sel.id)?'#fff':'none').attr('stroke-width',1.5).style('cursor','pointer')
+    .on('click',(e,d)=>{const r=abs?fd.find(x=>x.Genre===d.Genre):d;selectPt(r);openDP(r);})
+    .on('mousemove',(e,d)=>tip(e,`<strong>${d.Name||d.Genre}</strong>${ex}:${(d[ex]||0).toFixed(2)}M / ${ey}:${(d[ey]||0).toFixed(2)}M`)).on('mouseleave',ht);
+  if(abs)g.selectAll('text.lb').data(pts).join('text').attr('class','lb').attr('x',d=>x(d[ex]||0)+10).attr('y',d=>y(d[ey]||0)+4).attr('fill',d=>C[d.Genre]||'#7b82a8').attr('font-size',9).text(d=>d.Genre);
+  g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(5).tickFormat(d=>`${d}M`)).call(g2=>{g2.select('.domain').attr('stroke','#2e3350');g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9);});
+  axL(g,y);
+  document.getElementById('sct').textContent=abs?`${ex} vs ${ey} (Averages)`:`${ex} vs ${ey} (Games)`;
 }
 
-// ── TREND ──
-function drawTrend() {
-  const svg = d3.select('#trend'); svg.selectAll('*').remove();
-  const {W,H} = dims('trend');
-  svg.attr('viewBox',`0 0 ${W} ${H}`).attr('width',W).attr('height',H);
-  const m={t:8,r:8,b:35,l:50}, w=W-m.l-m.r, h=H-m.t-m.b;
-  const g = svg.append('g').attr('transform',`translate(${m.l},${m.t})`);
-
-  const data = [...d3.rollup(fData, v=>d3.sum(v,d=>d.Global), d=>d.Year)].sort((a,b)=>a[0]-b[0]);
-  if (!data.length) return;
-
-  const x = d3.scaleLinear().domain(d3.extent(data,d=>d[0])).range([0,w]);
-  const y = d3.scaleLinear().domain([0,d3.max(data,d=>d[1])*1.1]).range([h,0]);
-
-  const defs = svg.append('defs');
-  const gr = defs.append('linearGradient').attr('id','tg').attr('gradientUnits','userSpaceOnUse').attr('x1',0).attr('y1',m.t).attr('x2',0).attr('y2',h+m.t);
-  gr.append('stop').attr('offset','0%').attr('stop-color','#6c63ff').attr('stop-opacity',0.4);
+function drawTr(){
+  const {s,W,H}=mkSvg('tr');
+  const m={t:6,r:6,b:32,l:48},w=W-m.l-m.r,h=H-m.t-m.b;
+  const g=s.append('g').attr('transform',`translate(${m.l},${m.t})`);
+  const data=[...d3.rollup(fd,v=>d3.sum(v,d=>d.Global),d=>d.Year)].sort((a,b)=>a[0]-b[0]);
+  if(!data.length)return;
+  const x=d3.scaleLinear().domain(d3.extent(data,d=>d[0])).range([0,w]);
+  const y=d3.scaleLinear().domain([0,d3.max(data,d=>d[1])*1.1]).range([h,0]);
+  const defs=s.append('defs');
+  const gr=defs.append('linearGradient').attr('id','tg2').attr('gradientUnits','userSpaceOnUse').attr('x1',0).attr('y1',m.t).attr('x2',0).attr('y2',h+m.t);
+  gr.append('stop').attr('offset','0%').attr('stop-color','#6c63ff').attr('stop-opacity',0.35);
   gr.append('stop').attr('offset','100%').attr('stop-color','#6c63ff').attr('stop-opacity',0.02);
-
-  g.append('path').datum(data).attr('fill','url(#tg)').attr('d',d3.area().x(d=>x(d[0])).y0(h).y1(d=>y(d[1])).curve(d3.curveMonotoneX));
+  g.append('path').datum(data).attr('fill','url(#tg2)').attr('d',d3.area().x(d=>x(d[0])).y0(h).y1(d=>y(d[1])).curve(d3.curveMonotoneX));
   g.append('path').datum(data).attr('fill','none').attr('stroke','#6c63ff').attr('stroke-width',2).attr('d',d3.line().x(d=>x(d[0])).y(d=>y(d[1])).curve(d3.curveMonotoneX));
-  g.selectAll('circle').data(data).join('circle')
-    .attr('cx',d=>x(d[0])).attr('cy',d=>y(d[1])).attr('r',3).attr('fill','#6c63ff').attr('stroke','#0f1117').attr('stroke-width',1.5)
-    .on('mousemove',(e,d)=>showTip(e,`<strong>${d[0]}</strong>${d[1].toFixed(1)}M units`)).on('mouseleave',hideTip);
-
-  g.append('g').attr('transform',`translate(0,${h})`).call(d3.axisBottom(x).ticks(8).tickFormat(d3.format('d')))
-   .call(g2=>{ g2.select('.domain').attr('stroke','#2e3350'); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
-  g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d=>`${d}M`))
-   .call(g2=>{ g2.select('.domain').remove(); g2.selectAll('text').attr('fill','#7b82a8').attr('font-size',9); });
+  g.selectAll('circle').data(data).join('circle').attr('cx',d=>x(d[0])).attr('cy',d=>y(d[1])).attr('r',3).attr('fill','#6c63ff').attr('stroke','#0f1117').attr('stroke-width',1.5)
+    .on('mousemove',(e,d)=>tip(e,`<strong>${d[0]}</strong>${d[1].toFixed(1)}M`)).on('mouseleave',ht);
+  axB(g,x,h); axL(g,y);
 }
 
-// ── DONUT ──
-function drawDonut() {
-  const svg = d3.select('#donut'); svg.selectAll('*').remove();
-  const {W,H} = dims('donut');
-  svg.attr('viewBox',`0 0 ${W} ${H}`).attr('width',W).attr('height',H);
-
-  const segs = [{lbl:'NA',val:d3.sum(fData,d=>d.NA),col:'#6c63ff'},{lbl:'EU',val:d3.sum(fData,d=>d.EU),col:'#ff6584'},{lbl:'JP',val:d3.sum(fData,d=>d.JP),col:'#43e97b'},{lbl:'Other',val:d3.sum(fData,d=>d.Other),col:'#ffd166'}];
-  const total = d3.sum(segs,d=>d.val); if (!total) return;
-  const r=Math.min(W,H)/2-28, ir=r*0.55, cx=W/2, cy=H/2;
-  const arc = d3.arc().innerRadius(ir).outerRadius(r);
-  const arcH = d3.arc().innerRadius(ir).outerRadius(r+6);
-  const g = svg.append('g').attr('transform',`translate(${cx},${cy})`);
-
-  g.selectAll('path').data(d3.pie().value(d=>d.val).sort(null)(segs)).join('path')
-    .attr('d',arc).attr('fill',d=>d.data.col).attr('stroke','#0f1117').attr('stroke-width',2).attr('opacity',0.85)
-    .on('mouseenter',function(){ d3.select(this).attr('d',arcH); })
-    .on('mouseleave',function(e,d){ d3.select(this).attr('d',arc); hideTip(); })
-    .on('mousemove',(e,d)=>showTip(e,`<strong>${d.data.lbl}</strong>${d.data.val.toFixed(1)}M (${(d.data.val/total*100).toFixed(1)}%)`));
-
-  g.append('text').attr('text-anchor','middle').attr('dy','-0.2em').attr('fill','#e8eaf6').attr('font-size',15).attr('font-weight','bold').text(`${total.toFixed(0)}M`);
+function drawDn(){
+  const {s,W,H}=mkSvg('dn');
+  const segs=[{l:'NA',v:d3.sum(fd,d=>d.NA),c:'#6c63ff'},{l:'EU',v:d3.sum(fd,d=>d.EU),c:'#ff6584'},{l:'JP',v:d3.sum(fd,d=>d.JP),c:'#43e97b'},{l:'Other',v:d3.sum(fd,d=>d.Other),c:'#ffd166'}];
+  const tot=d3.sum(segs,d=>d.v);if(!tot)return;
+  const r=Math.min(W,H)/2-26,ir=r*0.55,cx=W/2,cy=H/2;
+  const arc=d3.arc().innerRadius(ir).outerRadius(r), arcH=d3.arc().innerRadius(ir).outerRadius(r+5);
+  const g=s.append('g').attr('transform',`translate(${cx},${cy})`);
+  g.selectAll('path').data(d3.pie().value(d=>d.v).sort(null)(segs)).join('path')
+    .attr('d',arc).attr('fill',d=>d.data.c).attr('stroke','#0f1117').attr('stroke-width',2).attr('opacity',0.85)
+    .on('mouseenter',function(){d3.select(this).attr('d',arcH);})
+    .on('mouseleave',function(e,d){d3.select(this).attr('d',arc);ht();})
+    .on('mousemove',(e,d)=>tip(e,`<strong>${d.data.l}</strong>${d.data.v.toFixed(1)}M (${(d.data.v/tot*100).toFixed(1)}%)`));
+  g.append('text').attr('text-anchor','middle').attr('dy','-0.2em').attr('fill','#e8eaf6').attr('font-size',14).attr('font-weight','bold').text(`${tot.toFixed(0)}M`);
   g.append('text').attr('text-anchor','middle').attr('dy','1.2em').attr('fill','#7b82a8').attr('font-size',9).text('Total Sales');
+  const lg=s.append('g').attr('transform',`translate(6,${H-38})`);
+  segs.forEach((s2,i)=>{const rw=lg.append('g').attr('transform',`translate(${i*(W/4)},0)`);rw.append('rect').attr('width',8).attr('height',8).attr('rx',2).attr('fill',s2.c);rw.append('text').attr('x',10).attr('y',8).attr('fill','#7b82a8').attr('font-size',9).text(`${s2.l}:${(s2.v/tot*100).toFixed(0)}%`);});
+}
 
-  const lg = svg.append('g').attr('transform',`translate(8,${H-44})`);
-  segs.forEach((s,i) => {
-    const row = lg.append('g').attr('transform',`translate(${i*(W/4)},0)`);
-    row.append('rect').attr('width',8).attr('height',8).attr('rx',2).attr('fill',s.col);
-    row.append('text').attr('x',11).attr('y',8).attr('fill','#7b82a8').attr('font-size',9).text(`${s.lbl}: ${(s.val/total*100).toFixed(0)}%`);
+function selectPt(d){sel=sel?.id===d.id?null:d;drawBar();drawSc();drawDn();}
+
+function openDP(d){
+  sel=d;
+  document.getElementById('dn2').textContent=d.Name;
+  document.getElementById('dp-pl').textContent=d.Platform;
+  document.getElementById('dp-yr').textContent=d.Year;
+  document.getElementById('dp-gn').textContent=d.Genre;
+  document.getElementById('dp-pb').textContent=d.Publisher;
+  document.getElementById('dp-gl').textContent=`${d.Global}M`;
+  const mx=Math.max(d.NA,d.EU,d.JP,d.Other)||1;
+  [['na',d.NA],['eu',d.EU],['jp',d.JP],['ot',d.Other]].forEach(([k,v])=>{
+    document.getElementById(`rb-${k}`).style.width=`${v/mx*100}%`;
+    document.getElementById(`rv-${k}`).textContent=`${v}M`;
   });
+  document.getElementById('dp').classList.add('open');
+  drawBar();drawDn();
 }
 
-// ── SELECT + CONNECT ──
-function selectPt(d) {
-  selected = selected?.id === d.id ? null : d;
-  drawBar(); drawScatter(); drawDonut();
-}
-
-// ── ELABORATE ──
-function openDetail(d) {
-  selected = d;
-  document.getElementById('d-name').textContent  = d.Name;
-  document.getElementById('d-plat').textContent  = d.Platform;
-  document.getElementById('d-year').textContent  = d.Year;
-  document.getElementById('d-genre').textContent = d.Genre;
-  document.getElementById('d-pub').textContent   = d.Publisher;
-  document.getElementById('d-global').textContent= `${d.Global}M`;
-  const mx = Math.max(d.NA, d.EU, d.JP, d.Other) || 1;
-  [['na',d.NA],['eu',d.EU],['jp',d.JP],['other',d.Other]].forEach(([k,v]) => {
-    document.getElementById(`rb-${k}`).style.width = `${v/mx*100}%`;
-    document.getElementById(`rl-${k}`).textContent = `${v}M`;
-  });
-  document.getElementById('detail').classList.add('open');
-  drawBar(); drawDonut();
-}
-
-function closeDetail() {
-  document.getElementById('detail').classList.remove('open');
-  selected = null;
-  drawBar(); drawScatter(); drawDonut();
-}
-
-window.addEventListener('resize', update);
+function closeDP(){document.getElementById('dp').classList.remove('open');sel=null;drawBar();drawSc();drawDn();}
+window.addEventListener('resize',update);
 </script>
 </body>
 </html>
