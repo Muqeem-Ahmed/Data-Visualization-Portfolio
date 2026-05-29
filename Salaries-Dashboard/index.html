@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Data Science Salary Visualization</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy: #0f2341;
+      --blue: #1e3a5f;
+      --accent: #2e86ab;
+      --gold: #f4a261;
+      --light: #f0f6ff;
+      --white: #ffffff;
+      --text: #1a2a3a;
+      --muted: #6b7f92;
+      --border: #d0dce8;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0a1628 0%, #0f2341 40%, #1a3a5c 70%, #0d2035 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 700px 500px at 20% 30%, rgba(46,134,171,0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 400px at 80% 70%, rgba(244,162,97,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(46,134,171,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(46,134,171,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(46,134,171,0.15);
+      border: 1px solid rgba(46,134,171,0.35);
+      color: #7cc8e8;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      padding: 8px 20px;
+      border-radius: 100px;
+      margin-bottom: 36px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .badge::before { content: '◆'; font-size: 8px; }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(42px, 8vw, 90px);
+      font-weight: 900;
+      color: var(--white);
+      line-height: 1.05;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+
+    .hero h1 span { color: var(--gold); }
+
+    .hero-sub {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(18px, 3vw, 28px);
+      color: rgba(160,200,230,0.85);
+      font-weight: 400;
+      font-style: italic;
+      margin-bottom: 48px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 56px;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+
+    .stat-chip {
+      text-align: center;
+    }
+    .stat-chip .num {
+      font-family: 'Playfair Display', serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .stat-chip .lbl {
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      color: rgba(160,200,230,0.7);
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp 0.6s 0.4s ease both;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border: 2px solid var(--accent);
+    }
+    .btn-primary:hover { background: #2578a0; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(46,134,171,0.4); }
+
+    .btn-outline {
+      background: transparent;
+      color: rgba(200,230,255,0.9);
+      border: 2px solid rgba(200,230,255,0.25);
+    }
+    .btn-outline:hover { border-color: rgba(200,230,255,0.6); color: white; transform: translateY(-2px); }
+
+    /* ── MAIN CONTENT ── */
+    main { background: var(--light); }
+
+    section { padding: 100px 24px; max-width: 1100px; margin: 0 auto; }
+
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 4vw, 46px);
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.15;
+      margin-bottom: 24px;
+    }
+
+    .divider {
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--gold));
+      border-radius: 2px;
+      margin-bottom: 40px;
+    }
+
+    /* ── TEAM ── */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 28px;
+      margin-top: 48px;
+    }
+
+    .team-card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 36px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 24px rgba(15,35,65,0.06);
+      transition: transform 0.25s, box-shadow 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .team-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--accent), var(--gold));
+    }
+    .team-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(15,35,65,0.12); }
+
+    .avatar {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 26px; font-weight: 700; color: white;
+      margin-bottom: 24px;
+    }
+
+    .team-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px; font-weight: 700;
+      color: var(--navy); margin-bottom: 6px;
+    }
+    .roll { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--accent); margin-bottom: 20px; }
+    .team-card p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+    .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .tag {
+      background: rgba(46,134,171,0.08);
+      color: var(--accent);
+      border: 1px solid rgba(46,134,171,0.2);
+      border-radius: 100px;
+      font-size: 12px; font-weight: 500;
+      padding: 4px 14px;
+    }
+
+    /* ── DATASET ── */
+    .dataset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 56px;
+    }
+
+    .ds-card {
+      background: white;
+      border-radius: 14px;
+      padding: 28px 24px;
+      border: 1px solid var(--border);
+      text-align: center;
+      transition: transform 0.2s;
+    }
+    .ds-card:hover { transform: translateY(-4px); }
+    .ds-icon { font-size: 32px; margin-bottom: 12px; }
+    .ds-num { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; color: var(--navy); }
+    .ds-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .columns-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 16px rgba(15,35,65,0.06);
+    }
+    .columns-table th {
+      background: var(--blue);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 14px 20px;
+      text-align: left;
+      letter-spacing: 0.5px;
+    }
+    .columns-table td {
+      padding: 13px 20px;
+      font-size: 14px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+    .columns-table tr:nth-child(even) td { background: #f7fafc; }
+    .columns-table tr:last-child td { border-bottom: none; }
+    .mono { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--accent); }
+
+    /* ── FINDINGS ── */
+    .findings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .finding-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 16px rgba(15,35,65,0.05);
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .finding-card:hover { transform: translateY(-4px); box-shadow: 0 12px 36px rgba(15,35,65,0.1); }
+
+    .finding-icon {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .finding-card h4 {
+      font-family: 'Playfair Display', serif;
+      font-size: 19px; font-weight: 700;
+      color: var(--navy); margin-bottom: 12px;
+    }
+    .finding-card p { font-size: 14px; color: var(--muted); line-height: 1.75; }
+
+    .highlight-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px; font-weight: 700;
+      color: var(--accent);
+      display: block;
+      margin: 8px 0;
+    }
+
+    /* ── SALARY BARS ── */
+    .salary-bar-wrap { margin-top: 48px; }
+    .bar-row { margin-bottom: 20px; }
+    .bar-label { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .bar-label span:first-child { font-size: 14px; font-weight: 500; color: var(--text); }
+    .bar-label span:last-child { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--accent); font-weight: 500; }
+    .bar-track { height: 12px; background: var(--border); border-radius: 100px; overflow: hidden; }
+    .bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--accent), var(--gold));
+      transition: width 1.2s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    /* ── TOOLS ── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-top: 48px;
+    }
+
+    .tool-chip {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 16px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .tool-chip:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(15,35,65,0.1); }
+    .tool-chip .t-icon { font-size: 28px; margin-bottom: 10px; }
+    .tool-chip .t-name { font-weight: 600; font-size: 14px; color: var(--navy); }
+    .tool-chip .t-desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ── LINKS ── */
+    .links-section {
+      background: linear-gradient(135deg, var(--navy) 0%, #1a3050 100%);
+      padding: 100px 24px;
+    }
+    .links-inner { max-width: 900px; margin: 0 auto; text-align: center; }
+    .links-inner .section-title { color: white; }
+    .links-inner .section-label { color: rgba(160,200,230,0.7); }
+    .links-inner p { color: rgba(200,225,255,0.7); font-size: 16px; margin-bottom: 48px; }
+
+    .link-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+    .link-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 28px 36px;
+      text-decoration: none;
+      transition: all 0.25s;
+      min-width: 220px;
+    }
+    .link-card:hover {
+      background: rgba(46,134,171,0.2);
+      border-color: rgba(46,134,171,0.5);
+      transform: translateY(-4px);
+    }
+    .link-card .lc-icon { font-size: 32px; margin-bottom: 12px; display: block; }
+    .link-card .lc-title { font-weight: 700; font-size: 16px; color: white; margin-bottom: 6px; }
+    .link-card .lc-url { font-family: 'DM Mono', monospace; font-size: 11px; color: rgba(160,200,230,0.6); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #080f1c;
+      color: rgba(160,200,230,0.5);
+      text-align: center;
+      padding: 36px 24px;
+      font-size: 13px;
+    }
+    footer strong { color: rgba(160,200,230,0.8); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(10,22,40,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(46,134,171,0.15);
+    }
+
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: white;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--gold); }
+
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      font-size: 14px; font-weight: 500;
+      color: rgba(200,225,255,0.75);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: white; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="#" class="nav-logo">DS<span>Salary</span></a>
+    <ul class="nav-links">
+      <li><a href="#team">Team</a></li>
+      <li><a href="#dataset">Dataset</a></li>
+      <li><a href="#findings">Findings</a></li>
+      <li><a href="#links">Links</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="grid-overlay"></div>
+    <div class="badge">Data Visualization — Spring 2025</div>
+    <h1>Data Science<br/><span>Salary Insights</span></h1>
+    <p class="hero-sub">Exploring global compensation trends across 78 countries &amp; 93 job roles</p>
+
+    <div class="hero-stats">
+      <div class="stat-chip">
+        <div class="num">3,755</div>
+        <div class="lbl">Records</div>
+      </div>
+      <div class="stat-chip">
+        <div class="num">78</div>
+        <div class="lbl">Countries</div>
+      </div>
+      <div class="stat-chip">
+        <div class="num">93</div>
+        <div class="lbl">Job Titles</div>
+      </div>
+      <div class="stat-chip">
+        <div class="num">4</div>
+        <div class="lbl">Years (2020–23)</div>
+      </div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="https://github.com/Sanawar710/Data-Visualization-Project" target="_blank" class="btn btn-primary">
+        ⬡ View on GitHub
+      </a>
+      <a href="#dataset" class="btn btn-outline">
+        Explore Dataset ↓
+      </a>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- TEAM -->
+    <section id="team">
+      <div class="reveal">
+        <div class="section-label">The Team</div>
+        <h2 class="section-title">Meet the Developers</h2>
+        <div class="divider"></div>
+        <p style="color:var(--muted);font-size:16px;max-width:640px;line-height:1.8;">
+          This project was collaboratively developed by two undergraduate students as part of their Data Visualization course. Both members contributed equally across all phases — from data wrangling to visualization design.
+        </p>
+      </div>
+
+      <div class="team-grid">
+        <div class="team-card reveal">
+          <div class="avatar">MS</div>
+          <h3>Muhammad Sanawar</h3>
+          <div class="roll">Roll No. 2023331</div>
+          <p>Responsible for data understanding, exploratory data analysis, and creating the data visualization application.</p>
+          <div class="tag-list">
+            <span class="tag">Data Understanding</span>
+            <span class="tag">EDA</span>
+            <span class="tag">Application Development</span>
+          </div>
+        </div>
+
+        <div class="team-card reveal">
+          <div class="avatar">MQ</div>
+          <h3>Muqeem Soomro</h3>
+          <div class="roll">Roll No. 2023561</div>
+          <p>Responsible for debugging the application, fixing issues, and creating the input-output interactive page.</p>
+          <div class="tag-list">
+            <span class="tag">Debugging</span>
+            <span class="tag">Bug Fixing</span>
+            <span class="tag">IO Page</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DATASET -->
+    <section id="dataset" style="background:#e8f0f8;border-radius:32px;padding:80px 48px;max-width:1200px;margin:0 auto;">
+      <div class="reveal">
+        <div class="section-label">The Data</div>
+        <h2 class="section-title">Dataset Overview</h2>
+        <div class="divider"></div>
+        <p style="color:var(--muted);font-size:16px;max-width:680px;line-height:1.8;margin-bottom:48px;">
+          The <strong>Data Science Job Salaries</strong> dataset is a publicly available collection sourced from <a href="https://www.kaggle.com/datasets/arnabchaki/data-science-salaries-2023" target="_blank" style="color:var(--accent);text-decoration:underline;">Kaggle</a>. It covers compensation data for data science and related roles from 2020 to 2023, standardized to USD for fair global comparison.
+        </p>
+      </div>
+
+      <div class="dataset-grid reveal">
+        <div class="ds-card">
+          <div class="ds-icon">📊</div>
+          <div class="ds-num">3,755</div>
+          <div class="ds-label">Total Records</div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-icon">📋</div>
+          <div class="ds-num">11</div>
+          <div class="ds-label">Features / Columns</div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-icon">💵</div>
+          <div class="ds-num">$137K</div>
+          <div class="ds-label">Mean Salary (USD)</div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-icon">🌍</div>
+          <div class="ds-num">78</div>
+          <div class="ds-label">Countries</div>
+        </div>
+        <div class="ds-card">
+          <div class="ds-icon">💼</div>
+          <div class="ds-num">93</div>
+          <div class="ds-label">Job Titles</div>
+        </div>
+      </div>
+
+      <div class="reveal" style="margin-top:20px;">
+        <h3 style="font-family:'Playfair Display',serif;font-size:22px;color:var(--navy);margin-bottom:24px;">Column Descriptions</h3>
+        <table class="columns-table">
+          <thead>
+            <tr>
+              <th>Column</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">work_year</td><td>Integer</td><td>Year salary was reported (2020–2023)</td></tr>
+            <tr><td class="mono">experience_level</td><td>Categorical</td><td>EN = Entry · MI = Mid · SE = Senior · EX = Executive</td></tr>
+            <tr><td class="mono">employment_type</td><td>Categorical</td><td>FT = Full-time · PT = Part-time · CT = Contract · FL = Freelance</td></tr>
+            <tr><td class="mono">job_title</td><td>String</td><td>Specific role title (93 unique values)</td></tr>
+            <tr><td class="mono">salary</td><td>Integer</td><td>Gross salary in the original currency</td></tr>
+            <tr><td class="mono">salary_currency</td><td>String</td><td>ISO currency code (USD, EUR, GBP, etc.)</td></tr>
+            <tr><td class="mono">salary_in_usd</td><td>Integer</td><td>Salary normalized to USD for comparison</td></tr>
+            <tr><td class="mono">employee_residence</td><td>String</td><td>Employee's country of residence (ISO code)</td></tr>
+            <tr><td class="mono">remote_ratio</td><td>Integer</td><td>0 = On-site · 50 = Hybrid · 100 = Fully Remote</td></tr>
+            <tr><td class="mono">company_location</td><td>String</td><td>Country where the company is based</td></tr>
+            <tr><td class="mono">company_size</td><td>Categorical</td><td>S = Small · M = Medium · L = Large</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FINDINGS -->
+    <section id="findings">
+      <div class="reveal">
+        <div class="section-label">Analysis</div>
+        <h2 class="section-title">Key Findings</h2>
+        <div class="divider"></div>
+        <p style="color:var(--muted);font-size:16px;max-width:640px;line-height:1.8;">
+          Through visualization techniques including line charts, bar charts, box plots, and choropleth maps, the following insights were uncovered from the dataset.
+        </p>
+      </div>
+
+      <!-- Salary bar chart by experience -->
+      <div class="salary-bar-wrap reveal" style="background:white;border-radius:20px;padding:40px;border:1px solid var(--border);margin:48px 0;">
+        <h3 style="font-family:'Playfair Display',serif;font-size:22px;color:var(--navy);margin-bottom:8px;">Average Salary by Experience Level</h3>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:32px;">Senior and Executive professionals earn 2–2.5× more than Entry-level peers</p>
+
+        <div class="bar-row">
+          <div class="bar-label"><span>🟢 Entry-Level (EN)</span><span>$78,546</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%" data-width="40%"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"><span>🔵 Mid-Level (MI)</span><span>$104,526</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%" data-width="54%"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"><span>🟠 Senior (SE)</span><span>$153,051</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%" data-width="78%"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"><span>🔴 Executive (EX)</span><span>$194,931</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%" data-width="100%"></div></div>
+        </div>
+      </div>
+
+      <!-- Salary trend -->
+      <div class="salary-bar-wrap reveal" style="background:white;border-radius:20px;padding:40px;border:1px solid var(--border);margin:48px 0;">
+        <h3 style="font-family:'Playfair Display',serif;font-size:22px;color:var(--navy);margin-bottom:8px;">Salary Growth Trend (2020–2023)</h3>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:32px;">Mean salaries grew by <strong>+61%</strong> in just four years</p>
+
+        <div class="bar-row">
+          <div class="bar-label"><span>📅 2020</span><span>$92,303</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%" data-width="62%"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"><span>📅 2021</span><span>$94,087</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%" data-width="63%"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"><span>📅 2022</span><span>$133,339</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%" data-width="89%"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label"><span>📅 2023</span><span>$149,046</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:0%" data-width="100%"></div></div>
+        </div>
+      </div>
+
+      <div class="findings-grid">
+        <div class="finding-card reveal">
+          <div class="finding-icon" style="background:rgba(46,134,171,0.1);">🌍</div>
+          <h4>US Dominates the Market</h4>
+          <span class="highlight-num">81%</span>
+          <p>Over 3,040 of 3,755 records originate from US-based companies, highlighting a strong geographic concentration in the dataset.</p>
+        </div>
+
+        <div class="finding-card reveal">
+          <div class="finding-icon" style="background:rgba(244,162,97,0.1);">🏠</div>
+          <h4>Remote Work Normalised</h4>
+          <span class="highlight-num">43.8%</span>
+          <p>Nearly half of all professionals in the dataset work fully remotely, up from a minority in 2020 — reflecting the post-pandemic shift.</p>
+        </div>
+
+        <div class="finding-card reveal">
+          <div class="finding-icon" style="background:rgba(72,200,120,0.1);">🏢</div>
+          <h4>Medium Companies Pay Most</h4>
+          <span class="highlight-num">$140K</span>
+          <p>Medium-sized companies (likely growth-stage tech firms) offer the highest median salaries, outpacing both large corporations and small startups.</p>
+        </div>
+
+        <div class="finding-card reveal">
+          <div class="finding-icon" style="background:rgba(155,89,182,0.1);">👑</div>
+          <h4>Top Earning Role</h4>
+          <span class="highlight-num">$375K</span>
+          <p>Data Science Tech Lead is the highest-paying role in the dataset, followed by Cloud Data Architect and Data Analytics Lead.</p>
+        </div>
+
+        <div class="finding-card reveal">
+          <div class="finding-icon" style="background:rgba(231,76,60,0.1);">📈</div>
+          <h4>Explosive Salary Growth</h4>
+          <span class="highlight-num">+61%</span>
+          <p>Average salaries grew from $92,303 in 2020 to $149,046 in 2023 — the steepest jump occurring between 2021 and 2022.</p>
+        </div>
+
+        <div class="finding-card reveal">
+          <div class="finding-icon" style="background:rgba(46,134,171,0.1);">💼</div>
+          <h4>Full-Time Dominates</h4>
+          <span class="highlight-num">99%</span>
+          <p>Full-time employment accounts for 3,718 of 3,755 records, showing that data science roles are overwhelmingly permanent positions.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOOLS -->
+    <section style="background:#e8f0f8;border-radius:32px;padding:80px 48px;max-width:1200px;margin:0 auto;">
+      <div class="reveal">
+        <div class="section-label">Technology Stack</div>
+        <h2 class="section-title">Tools & Libraries Used</h2>
+        <div class="divider"></div>
+      </div>
+
+      <div class="tools-grid reveal">
+        <div class="tool-chip">
+          <div class="t-icon">🐍</div>
+          <div class="t-name">Python 3.10</div>
+          <div class="t-desc">Core language</div>
+        </div>
+        <div class="tool-chip">
+          <div class="t-icon">🐼</div>
+          <div class="t-name">Pandas</div>
+          <div class="t-desc">Data wrangling</div>
+        </div>
+        <div class="tool-chip">
+          <div class="t-icon">🔢</div>
+          <div class="t-name">NumPy</div>
+          <div class="t-desc">Numerical ops</div>
+        </div>
+        <div class="tool-chip">
+          <div class="t-icon">📊</div>
+          <div class="t-name">Matplotlib</div>
+          <div class="t-desc">Static charts</div>
+        </div>
+        <div class="tool-chip">
+          <div class="t-icon">🎨</div>
+          <div class="t-name">Seaborn</div>
+          <div class="t-desc">Statistical viz</div>
+        </div>
+        <div class="tool-chip">
+          <div class="t-icon">⚡</div>
+          <div class="t-name">Plotly</div>
+          <div class="t-desc">Interactive charts</div>
+        </div>
+        <div class="tool-chip">
+          <div class="t-icon">📓</div>
+          <div class="t-name">Jupyter</div>
+          <div class="t-desc">Notebooks</div>
+        </div>
+        <div class="tool-chip">
+          <div class="t-icon">🐙</div>
+          <div class="t-name">GitHub Pages</div>
+          <div class="t-desc">Deployment</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- LINKS -->
+  <div class="links-section" id="links">
+    <div class="links-inner">
+      <div class="section-label">Project Resources</div>
+      <h2 class="section-title">Links & References</h2>
+      <div class="divider" style="margin:20px auto 32px;"></div>
+      <p>Access the full source code, explore the dataset, and review the complete project report through the links below.</p>
+
+      <div class="link-cards">
+        <a href="https://github.com/Sanawar710/Data-Visualization-Project" target="_blank" class="link-card">
+          <span class="lc-icon">🐙</span>
+          <div class="lc-title">GitHub Repository</div>
+          <div class="lc-url">github.com/Sanawar710/...</div>
+        </a>
+        <a href="https://sanawar710.github.io/Data-Visualization-Project" target="_blank" class="link-card">
+          <span class="lc-icon">🌐</span>
+          <div class="lc-title">GitHub IO Page</div>
+          <div class="lc-url">sanawar710.github.io/...</div>
+        </a>
+        <a href="https://www.kaggle.com/datasets/arnabchaki/data-science-salaries-2023" target="_blank" class="link-card">
+          <span class="lc-icon">📂</span>
+          <div class="lc-title">Dataset Source</div>
+          <div class="lc-url">kaggle.com/datasets/...</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Data Visualization Project &nbsp;·&nbsp; Spring 2025 &nbsp;·&nbsp;
+    <strong>Muhammad Sanawar (2023331)</strong> &amp; <strong>Muqeem Soomro (2023561)</strong></p>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const revealEls = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('visible'), i * 80);
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    revealEls.forEach(el => io.observe(el));
+
+    // Animate bars when visible
+    const bars = document.querySelectorAll('.bar-fill');
+    const barObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          const target = e.target.dataset.width;
+          setTimeout(() => { e.target.style.width = target; }, 300);
+          barObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    bars.forEach(b => barObs.observe(b));
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const t = document.querySelector(a.getAttribute('href'));
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  </script>
+</body>
+</html>
